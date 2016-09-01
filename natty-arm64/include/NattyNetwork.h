@@ -164,6 +164,7 @@ int ntyGetSocket(void *self);
 U8 ntyGetReqType(void *self);
 C_DEVID ntyGetDestDevId(void *self);
 void ntySetDevId(C_DEVID id);
+void ntyGenCrcTable(void);
 
 
 
