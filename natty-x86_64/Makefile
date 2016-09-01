@@ -3,7 +3,7 @@
 #CC = gcc
 CC = xcrun -sdk iphonesimulator clang -arch x86_64 -mios-simulator-version-min=7.0
 #AR = ar
-ARFLAGS=
+ARFLAGS = -r
 AR= ar $(ARFLAGS) r
 #SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "debug") print $$9}')
 SUBDIRS = src/ #modules/

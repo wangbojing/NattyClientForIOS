@@ -1,20 +1,44 @@
 #! /usr/bin/env bash
 #
-# Copyright (C) 2013-2014 Zhang Rui <bbcallen@gmail.com>
+# *  Author : WangBoJing , email : 1989wangbojing@gmail.com
+# * 
+# *  Copyright Statement:
+# *  --------------------
+# *  This software is protected by Copyright and the information contained
+# *  herein is confidential. The software may not be copied and the information
+# *  contained herein may not be used or disclosed except with the written
+# *  permission of Author. (C) 2016
+# * 
+# *
+# 
+#****       *****
+#  ***        *
+#  ***        *                         *               *
+#  * **       *                         *               *
+#  * **       *                         *               *
+#  *  **      *                        **              **
+#  *  **      *                       ***             ***
+#  *   **     *       ******       ***********     ***********    *****    *****
+#  *   **     *     **     **          **              **           **      **
+#  *    **    *    **       **         **              **           **      *
+#  *    **    *    **       **         **              **            *      *
+#  *     **   *    **       **         **              **            **     *
+#  *     **   *            ***         **              **             *    *
+#  *      **  *       ***** **         **              **             **   *
+#  *      **  *     ***     **         **              **             **   *
+#  *       ** *    **       **         **              **              *  *
+#  *       ** *   **        **         **              **              ** *
+#  *        ***   **        **         **              **               * *
+#  *        ***   **        **         **     *        **     *         **
+#  *         **   **        **  *      **     *        **     *         **
+#  *         **    **     ****  *       **   *          **   *          *
+#*****        *     ******   ***         ****            ****           *
+#                                                                       *
+#                                                                      *
+#                                                                  *****
+#                                                                  ****
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
 #----------
 # modify for your build tool
 
