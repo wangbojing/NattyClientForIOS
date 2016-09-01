@@ -99,7 +99,7 @@ int main() {
 	ntySetDevId(AppId);
 	
 	ntyStartupClient();
-	sleep(5);
+	//sleep(5);
 #if 1
 	while(1) {
 		ntydbg("Proxy Please send msg:");
