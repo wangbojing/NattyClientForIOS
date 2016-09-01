@@ -16,6 +16,6 @@ CLIENT_BIN = NattyClient
 #	$(CC) -o $(CLIENT_BIN) $(CLIENT_OBJ) $(FLAG)
 
 bin : 
-	$(AR) $(ROOT_DIR)/$(CLINET_LIB) $(CLIENT_OBJ)
+	$(AR) -r $(ROOT_DIR)/$(CLINET_LIB) $(CLIENT_OBJ)
 	$(CC) $(BIN_OBJ) -L../ -lnatty-client -o $(ROOT_DIR)/$(CLIENT_BIN) $(FLAG) -g
 
