@@ -63,7 +63,7 @@ int ntySendDataPacket(DEVID toId, U8 *data, int length);
 int ntySendMassDataPacket(U8 *data, int length);
 void ntySetSendSuccessCallback(PROXYCALLBACK cb);
 void ntySetSendFailedCallback(PROXYCALLBACK cb);
-void ntySetProxyCallback(PROXYCALLBACK cb);
+void ntySetProxyCallback(PROXYHANDLECB cb);
 void ntySetProxyReconnect(PROXYCALLBACK cb);
 void ntySetProxyDisconnect(PROXYCALLBACK cb);
 U8* ntyGetRecvBuffer(void);
