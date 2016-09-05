@@ -51,12 +51,14 @@
 #define ntydbg(format, ...) 		fprintf(stdout, format, ##__VA_ARGS__)
 
 #if 1
-void ntyUserRecvCb(int len) {
+void ntyUserRecvCb(DEVID id, int len) {
 	//int i = 0;
 	U8 *buffer = ntyGetRecvBuffer();
 
 	//for (i = 0;i < len;i ++) {
-	ntydbg("len:%d, %s ", len, buffer);
+	ntydbg("id: %ld, len:%d, %s ", id, len, buffer);
+
+	//
 	//}
 	ntydbg("\n");
 }

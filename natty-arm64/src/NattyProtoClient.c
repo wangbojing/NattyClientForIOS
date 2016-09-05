@@ -83,7 +83,7 @@ typedef struct _NATTYPROTOCOL {
 	U8 level;
 	U8 recvBuffer[RECV_BUFFER_SIZE];
 	U16 recvLen;
-	PROXY_CALLBACK onProxyCallback; //just for java
+	PROXY_HANDLE_CB onProxyCallback; //just for java
 	RECV_CALLBACK onRecvCallback; //recv
 	PROXY_CALLBACK onProxyFailed; //send data failed
 	PROXY_CALLBACK onProxySuccess; //send data success
@@ -484,7 +484,7 @@ void ntySetSendFailedCallback(PROXY_CALLBACK cb) {
 	}
 }
 
-void ntySetProxyCallback(PROXY_CALLBACK cb) {
+void ntySetProxyCallback(PROXY_HANDLE_CB cb) {
 	NattyProto* proto = ntyProtoInstance();
 	if (proto) {
 		proto->onProxyCallback = cb;
@@ -519,6 +519,11 @@ void ntySetDevId(C_DEVID id) {
 	}
 }
 
+int ntyGetNetwortkStatus(void) {
+	void *network = ntyNetworkInstance();
+	return ntyGetSocket(network);
+}
+
 int ntyStartupClient(void) {
 	NattyProto* proto = ntyProtoInstance();
 	void *network = ntyNetworkInstance();
@@ -539,6 +544,16 @@ int ntyStartupClient(void) {
 
 	return 2;
 }
+
+void ntyShutdownClient(void) {
+	NattyProto* proto = ntyProtoInstance();
+	void *pNetwork = ntyNetworkInstance();
+	ntyNetworkRelease(pNetwork);
+
+	proto->u8RecvExitFlag = 1;
+	proto->recvThread_id = 0;
+}
+
 
 U8* ntyGetRecvBuffer(void) {
 	NattyProto* proto = ntyProtoInstance();
@@ -702,7 +717,7 @@ static void* ntyRecvProc(void *arg) {
 				//LOG("proxyAck end");
 				if (proto->onProxyCallback) {
 					proto->recvLen -= (NTY_PROTO_DATAPACKET_CONTENT_IDX+sizeof(U32));
-					proto->onProxyCallback(proto->recvLen);
+					proto->onProxyCallback(friId ,proto->recvLen);
 				}
 				//LOG("onProxyCallback end");
 			} else if (buf[NTY_PROTO_TYPE_IDX] == NTY_PROTO_DATAPACKET_ACK) {

@@ -54,16 +54,18 @@ typedef enum {
 } StatusSendResult;
 
 
-typedef void (*PROXYCALLBACK)(int len);
 typedef unsigned long long DEVID;
 typedef unsigned char U8;
+
+typedef void (*PROXYCALLBACK)(int len);
+typedef void (*PROXYHANDLECB)(DEVID id, int len);
 
 
 int ntySendDataPacket(DEVID toId, U8 *data, int length);
 int ntySendMassDataPacket(U8 *data, int length);
 void ntySetSendSuccessCallback(PROXYCALLBACK cb);
 void ntySetSendFailedCallback(PROXYCALLBACK cb);
-void ntySetProxyCallback(PROXYCALLBACK cb);
+void ntySetProxyCallback(PROXYHANDLECB cb);
 void ntySetProxyReconnect(PROXYCALLBACK cb);
 void ntySetProxyDisconnect(PROXYCALLBACK cb);
 U8* ntyGetRecvBuffer(void);
@@ -71,6 +73,8 @@ void ntySetDevId(DEVID id);
 int ntyGetRecvBufferSize(void);
 int ntyStartupClient(void);
 void ntyReleaseNetwork(void);
+int ntyGetNetwortkStatus(void);
+void ntyShutdownClient(void);
 
 
 #endif

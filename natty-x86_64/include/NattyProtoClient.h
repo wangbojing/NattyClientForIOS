@@ -71,6 +71,9 @@ void ntySetDevId(DEVID id);
 int ntyGetRecvBufferSize(void);
 int ntyStartupClient(void);
 void ntyReleaseNetwork(void);
+int ntyGetNetwortkStatus(void);
+void ntyShutdownClient(void);
+
 
 
 #endif
