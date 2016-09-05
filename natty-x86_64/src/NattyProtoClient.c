@@ -92,6 +92,7 @@ typedef struct _NATTYPROTOCOL {
 	PROXY_CALLBACK onProxyReconnect;
 	U8 heartbeartRun;
 	U8 p2pHeartbeatRun;
+	U8 u8RecvExitFlag;
 	pthread_t heartbeatThread_id;
 	pthread_t recvThread_id;
 	struct sockaddr_in serveraddr;
