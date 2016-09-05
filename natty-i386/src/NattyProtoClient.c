@@ -84,7 +84,7 @@ typedef struct _NATTYPROTOCOL {
 	U8 level;
 	U8 recvBuffer[RECV_BUFFER_SIZE];
 	U16 recvLen;
-	PROXY_HANDLE_CB onProxyCallback; //just for java
+	PROXYHANDLECB onProxyCallback; //just for java
 	RECV_CALLBACK onRecvCallback; //recv
 	PROXY_CALLBACK onProxyFailed; //send data failed
 	PROXY_CALLBACK onProxySuccess; //send data success
@@ -486,7 +486,7 @@ void ntySetSendFailedCallback(PROXY_CALLBACK cb) {
 	}
 }
 
-void ntySetProxyCallback(PROXY_HANDLE_CB cb) {
+void ntySetProxyCallback(PROXYHANDLECB cb) {
 	NattyProto* proto = ntyProtoInstance();
 	if (proto) {
 		proto->onProxyCallback = cb;
