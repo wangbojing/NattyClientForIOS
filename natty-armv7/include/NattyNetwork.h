@@ -128,6 +128,8 @@ enum {
 #define P2P_HEARTBEAT_TIMEOUT_COUNTR	5
 
 typedef void (*PROXY_CALLBACK)(int len);
+typedef void (*PROXY_HANDLE_CB)(C_DEVID id, int len);
+
 
 
 typedef struct _NETWORK {
