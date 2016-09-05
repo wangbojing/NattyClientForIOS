@@ -54,9 +54,12 @@ typedef enum {
 } StatusSendResult;
 
 
-typedef void (*PROXYCALLBACK)(int len);
 typedef unsigned long long DEVID;
 typedef unsigned char U8;
+
+typedef void (*PROXYCALLBACK)(int len);
+typedef void (*PROXYHANDLECB)(DEVID id, int len);
+
 
 
 int ntySendDataPacket(DEVID toId, U8 *data, int length);
