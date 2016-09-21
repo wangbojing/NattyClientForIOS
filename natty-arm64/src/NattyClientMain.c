@@ -46,7 +46,8 @@
 
 #include "NattyProtoClient.h"
 
-
+#define ntydbg(format, ...) 		fprintf(stdout, format, ##__VA_ARGS__)
+#define RECV_BUFFER_SIZE			1024
 
 #if 1
 void ntyUserRecvCb(int len) {

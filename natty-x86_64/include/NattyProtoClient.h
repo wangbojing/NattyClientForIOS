@@ -74,6 +74,8 @@ void ntySetSendFailedCallback(PROXY_CALLBACK_CLINET cb);
 void ntySetProxyCallback(PROXY_CALLBACK_CLINET cb);
 U8* ntyGetRecvBuffer(void);
 DEVID ntyGetFromDevID(void);
+void ntySetProxyDisconnect(PROXY_CALLBACK cb);
+void ntySetProxyReconnect(PROXY_CALLBACK cb);
 
 
 void ntySetDevId(DEVID id);
