@@ -63,11 +63,13 @@ TimeStamp* ntyGetSystemTime(void);
 
 U16 ntyU8ArrayToU16(U8 *buf);
 U32 ntyU8ArrayToU32(U8 *buf);
-C_DEVID ntyU8ArrayToU64(U8 *buf);
-void ntyU64ToU8Array(U8 *buf, C_DEVID devid);
-void ntyU32ToU8Array(U8 *buf, C_DEVID devid);
+void ntyU8ArrayToU64(U8 *buf, C_DEVID *id);
 
 
+int ntySeparation(char ch,const char *sequence, int length, char ***pChTable, int *Count);
+void ntyFreeTable(unsigned char ***table, int count);
+
+char ntyIsAvailableNum(char *phnum);
 
 #endif
 

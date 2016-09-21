@@ -65,6 +65,7 @@ typedef long long C_DEVID;
 #define SERVER_NAME		"112.93.116.188" //"127.0.0.1" 
 #define SERVER_PORT		8888
 #define RECV_BUFFER_SIZE	(1024+16)
+#define NORMAL_BUFFER_SIZE	64
 #define SENT_TIMEOUT	3
 
 
@@ -129,7 +130,6 @@ enum {
 
 typedef void (*PROXY_CALLBACK)(int len);
 typedef void (*PROXY_HANDLE_CB)(C_DEVID id, int len);
-
 
 
 typedef struct _NETWORK {

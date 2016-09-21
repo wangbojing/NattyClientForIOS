@@ -140,8 +140,10 @@ void NattyRBTreeInsert(RBTree *T, RBTreeNode *z) {
 		y = x;
 		if (z->key < x->key) {
 			x = x->left;
-		} else {
+		} else if(z->key > x->key) {
 			x = x->right;
+		} else { //Exist
+			return ;
 		}
 	}
 

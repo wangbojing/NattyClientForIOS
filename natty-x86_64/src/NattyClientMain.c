@@ -46,19 +46,15 @@
 
 #include "NattyProtoClient.h"
 
-#define RECV_BUFFER_SIZE 	1024
 
-#define ntydbg(format, ...) 		fprintf(stdout, format, ##__VA_ARGS__)
 
 #if 1
-void ntyUserRecvCb(DEVID id, int len) {
+void ntyUserRecvCb(int len) {
 	//int i = 0;
 	U8 *buffer = ntyGetRecvBuffer();
 
 	//for (i = 0;i < len;i ++) {
-	ntydbg("id: %ld, len:%d, %s ", id, len, buffer);
-
-	//
+	ntydbg("len:%d, %s ", len, buffer);
 	//}
 	ntydbg("\n");
 }
