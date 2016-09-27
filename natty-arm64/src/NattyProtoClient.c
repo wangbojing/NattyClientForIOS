@@ -274,9 +274,13 @@ void ntyProtoClientBind(void *_self, C_DEVID did) {
 	buf[NEY_PROTO_VERSION_IDX] = NEY_PROTO_VERSION;	
 	buf[NTY_PROTO_MESSAGE_TYPE] = (U8) MSG_REQ;	
 	buf[NTY_PROTO_TYPE_IDX] = NTY_PROTO_BIND_REQ;
-
+#if 0
 	*(C_DEVID*)(&buf[NTY_PROTO_BIND_APPID_IDX]) = proto->devid;
 	*(C_DEVID*)(&buf[NTY_PROTO_BIND_DEVICEID_IDX]) = did;
+#else
+	memcpy(buf+NTY_PROTO_BIND_APPID_IDX, &proto->devid, sizeof(C_DEVID));
+	memcpy(buf+NTY_PROTO_BIND_DEVICEID_IDX, &did, sizeof(C_DEVID));
+#endif
 	len = NTY_PROTO_BIND_CRC_IDX + sizeof(U32);
 
 	ntydbg(" ntyProtoClientBind --> ");
