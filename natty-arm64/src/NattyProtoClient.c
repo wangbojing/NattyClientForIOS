@@ -146,6 +146,16 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 	proto->u8HeartbeatExistFlag = 0;
 	proto->u8RecvExitFlag = 0;
 
+#if 1
+	proto->onProxyCallback = NULL;
+	proto->onProxyFailed = NULL;
+	proto->onProxySuccess = NULL;
+	proto->onProxyDisconnect = NULL;
+	proto->onProxyReconnect = NULL;
+	proto->onUnBindResult = NULL;
+	proto->onBindResult = NULL;
+#endif
+
 #if 1 //server addr init
 #if 0 //android JNI don't support gethostbyname
 	server = gethostbyname(SERVER_NAME);    
@@ -218,19 +228,26 @@ void* ntyProtoClientHeartBeat(void *_self) {
 		return NULL;	
 	}	
 	proto->heartbeartRun = 1;
-	void *pNetwork = ntyNetworkInstance();
-
+	
 	while (1) {		
+		void *pNetwork = ntyGetNetworkInstance();
+		if (pNetwork == NULL) {
+			sleep(HEARTBEAT_TIMEOUT);	
+			continue;
+		}
 		bzero(buf, NTY_LOGIN_ACK_LENGTH);
 		sleep(HEARTBEAT_TIMEOUT);	
-		if (proto->u8HeartbeatExistFlag) break;
+		
 		if (proto->devid == 0) continue; //set devid
 		
 		buf[NEY_PROTO_VERSION_IDX] = NEY_PROTO_VERSION;	
 		buf[NTY_PROTO_MESSAGE_TYPE] = (U8) MSG_REQ;	
-		buf[NTY_PROTO_TYPE_IDX] = NTY_PROTO_HEARTBEAT_REQ;		
+		buf[NTY_PROTO_TYPE_IDX] = NTY_PROTO_HEARTBEAT_REQ;	
+#if 0
 		*(C_DEVID*)(&buf[NTY_PROTO_DEVID_IDX]) = proto->devid;
-		
+#else
+		memcpy(&buf[NTY_PROTO_DEVID_IDX], &proto->devid, sizeof(C_DEVID));
+#endif
 		len = NTY_PROTO_LOGIN_REQ_CRC_IDX+sizeof(U32);
 		
 		n = ntySendFrame(pNetwork, &proto->serveraddr, buf, len);
@@ -256,8 +273,11 @@ void ntyProtoClientLogin(void *_self) {
 	buf[NEY_PROTO_VERSION_IDX] = NEY_PROTO_VERSION;	
 	buf[NTY_PROTO_MESSAGE_TYPE] = (U8) MSG_REQ;	
 	buf[NTY_PROTO_TYPE_IDX] = NTY_PROTO_LOGIN_REQ;
+#if 0
 	*(C_DEVID*)(&buf[NTY_PROTO_LOGIN_REQ_DEVID_IDX]) = proto->devid;	
-	
+#else
+	memcpy(&buf[NTY_PROTO_LOGIN_REQ_DEVID_IDX], &proto->devid, sizeof(C_DEVID));
+#endif
 	len = NTY_PROTO_LOGIN_REQ_CRC_IDX+sizeof(U32);				
 
 	ntydbg(" ntyProtoClientLogin %d\n", __LINE__);
@@ -278,8 +298,8 @@ void ntyProtoClientBind(void *_self, C_DEVID did) {
 	*(C_DEVID*)(&buf[NTY_PROTO_BIND_APPID_IDX]) = proto->devid;
 	*(C_DEVID*)(&buf[NTY_PROTO_BIND_DEVICEID_IDX]) = did;
 #else
-	memcpy(buf+NTY_PROTO_BIND_APPID_IDX, &proto->devid, sizeof(C_DEVID));
-	memcpy(buf+NTY_PROTO_BIND_DEVICEID_IDX, &did, sizeof(C_DEVID));
+	memcpy(&buf[NTY_PROTO_BIND_APPID_IDX], &proto->devid, sizeof(C_DEVID));
+	memcpy(&buf[NTY_PROTO_BIND_DEVICEID_IDX], &did, sizeof(C_DEVID));
 #endif
 	len = NTY_PROTO_BIND_CRC_IDX + sizeof(U32);
 
@@ -298,9 +318,13 @@ void ntyProtoClientUnBind(void *_self, C_DEVID did) {
 	buf[NEY_PROTO_VERSION_IDX] = NEY_PROTO_VERSION;	
 	buf[NTY_PROTO_MESSAGE_TYPE] = (U8) MSG_REQ;	
 	buf[NTY_PROTO_TYPE_IDX] = NTY_PROTO_UNBIND_REQ;
-
+#if 0
 	*(C_DEVID*)(&buf[NTY_PROTO_UNBIND_APPID_IDX]) = proto->devid;
 	*(C_DEVID*)(&buf[NTY_PROTO_UNBIND_DEVICEID_IDX]) = did;
+#else
+	memcpy(&buf[NTY_PROTO_BIND_APPID_IDX], &proto->devid, sizeof(C_DEVID));
+	memcpy(&buf[NTY_PROTO_BIND_DEVICEID_IDX], &did, sizeof(C_DEVID));
+#endif
 	len = NTY_PROTO_UNBIND_CRC_IDX + sizeof(U32);
 
 	void *pNetwork = ntyNetworkInstance();
@@ -604,7 +628,26 @@ int ntyGetNetworkStatus(void) {
 	return ntyGetSocket(network);
 }
 
+int ntyCheckProtoClientStatus(void) {
+	NattyProto* proto = ntyProtoInstance();
+	if (proto) {
+		if (proto->onProxyCallback == NULL) return -2;
+		if (proto->onProxyFailed == NULL) return -3;
+		if (proto->onProxySuccess == NULL) return -4;
+		if (proto->onProxyDisconnect == NULL) return -5;
+		if (proto->onProxyReconnect == NULL) return -6;
+		if (proto->onBindResult == NULL) return -7;
+		if (proto->onUnBindResult == NULL) return -8;
+		if (proto->onRecvCallback == NULL) return -9;
+	}
+	return 0;
+}
+
+
 int ntyStartupClient(void) {
+	int ret = ntyCheckProtoClientStatus();
+	if (ret != 0) return ret;
+	
 	NattyProto* proto = ntyProtoInstance();
 	if (proto) {
 		ntySendLogin(proto);
@@ -620,8 +663,8 @@ void ntyShutdownClient(void) {
 	void *pNetwork = ntyNetworkInstance();
 	ntyNetworkRelease(pNetwork);
 
-	proto->u8HeartbeatExistFlag = 1;
-	proto->u8RecvExitFlag = 1;
+	//proto->u8HeartbeatExistFlag = 1;
+	//proto->u8RecvExitFlag = 1;
 	
 	proto->recvThread_id = 0;
 	proto->heartbeatThread_id = 0;
@@ -705,14 +748,20 @@ static void ntyReconnectProc(int len) {
 
 void ntyReleaseNetwork(void) {
 #if 1
-	void *network = ntyNetworkInstance();
+	void *network = ntyGetNetworkInstance();
 #endif
+	if (network != NULL) {
+		network = ntyNetworkRelease(network);
+		network = NULL;
+	}
 
+	void *pConnTimer = ntyReconnectTimerInstance();
+	ntyStartTimer(pConnTimer, ntyReconnectProc);
+}
+
+void ntyDestoryNetwork(void *network) {
 	network = ntyNetworkRelease(network);
 	network = NULL;
-
-	void *pConnTimer = ntyReconnectTimerInstance();	
-	ntyStartTimer(pConnTimer, ntyReconnectProc);
 }
 
 C_DEVID* ntyGetFriendsList(int *Count) {
@@ -738,32 +787,40 @@ static void* ntyRecvProc(void *arg) {
 	U8 *buf = proto->recvBuffer;
 
 	int ret;
-	void *pNetwork = ntyNetworkInstance();
-
-	struct pollfd fds;
-	fds.fd = ntyGetSocket(pNetwork);
-	fds.events = POLLIN;
 
 	ntydbg(" ntyRecvProc %d\n", fds.fd);
 	while (1) {
-		if (proto->u8RecvExitFlag){ 
-			ntydbg(" ntyRecvProc Exist\n");
-			break;
+		
+		void *pNetwork = ntyGetNetworkInstance();
+		struct pollfd fds;
+		fds.fd = ntyGetSocket(pNetwork);
+		fds.events = POLLIN;
+		if (fds.fd == -1) { //disconnect 
+			sleep(60);
+			continue;
 		}
 		ret = poll(&fds, 1, 5);
 		if (ret) {
 			bzero(buf, RECV_BUFFER_SIZE);
 			proto->recvLen = ntyRecvFrame(pNetwork, buf, RECV_BUFFER_SIZE, &addr);
-			if (proto->recvLen == 0) { //disconnect
+			if (proto->recvLen == 0 || proto->recvLen > 1024) { //disconnect
 				//ntyReconnect(pNetwork);
 				//Release Network
-				ntyReleaseNetwork();
 				
 				ntydbg("Prepare to Reconnect to server\n");
-				if (proto->onProxyDisconnect) {
-					proto->onProxyDisconnect(0);
+				if (ntyGetSocket(pNetwork) != -1){
+					if (proto->onProxyDisconnect) {
+						proto->onProxyDisconnect(0);
+					}
+#if 0
+					ntyDestoryNetwork(pNetwork);
+#else
+					ntyReleaseNetwork();
+#endif
 				}
-				break;
+
+				sleep(60);
+				continue;
 			}
 			LOG("\n%d.%d.%d.%d:%d, length:%d --> %x\n", *(unsigned char*)(&addr.sin_addr.s_addr), *((unsigned char*)(&addr.sin_addr.s_addr)+1),
 				*((unsigned char*)(&addr.sin_addr.s_addr)+2), *((unsigned char*)(&addr.sin_addr.s_addr)+3),													
@@ -842,13 +899,23 @@ static void* ntyRecvProc(void *arg) {
 					proto->onProxySuccess(0);
 				}
 			} else if (buf[NTY_PROTO_TYPE_IDX] == NTY_PROTO_BIND_ACK) {
+			#if 0
 				int result = ntyU8ArrayToU32(&buf[NTY_PROTO_BIND_ACK_RESULT_IDX]);
+			#else
+				int result = 0;
+				memcpy(&result, &buf[NTY_PROTO_BIND_ACK_RESULT_IDX], sizeof(int));
+			#endif
 				if (proto->onBindResult) {
 					proto->onBindResult(result);
 				}
 				ntydbg(" NTY_PROTO_BIND_ACK\n");
 			} else if (buf[NTY_PROTO_TYPE_IDX] == NTY_PROTO_UNBIND_ACK) {
-				int result = ntyU8ArrayToU32(&buf[NTY_PROTO_UNBIND_ACK_RESULT_IDX]);
+			#if 0
+				int result = ntyU8ArrayToU32(&buf[NTY_PROTO_BIND_ACK_RESULT_IDX]);
+			#else
+				int result = 0;
+				memcpy(&result, &buf[NTY_PROTO_BIND_ACK_RESULT_IDX], sizeof(int));
+			#endif
 				if (proto->onUnBindResult) {
 					proto->onUnBindResult(result);
 				}

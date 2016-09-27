@@ -78,6 +78,7 @@ void ntySetProxyDisconnect(PROXY_CALLBACK_CLINET cb);
 void ntySetProxyReconnect(PROXY_CALLBACK_CLINET cb);
 
 
+
 void ntySetDevId(DEVID id);
 int ntyGetRecvBufferSize(void);
 void ntyReleaseNetwork(void);

@@ -156,6 +156,7 @@ typedef struct _NETWORKOPERA {
 
 
 void *ntyNetworkInstance(void);
+void *ntyGetNetworkInstance(void);
 void *ntyNetworkRelease(void *self);
 int ntySendFrame(void *self, struct sockaddr_in *to, U8 *buf, int len);
 int ntyRecvFrame(void *self, U8 *buf, int len, struct sockaddr_in *from);
