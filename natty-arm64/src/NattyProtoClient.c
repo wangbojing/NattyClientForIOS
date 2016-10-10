@@ -796,7 +796,7 @@ static void* ntyRecvProc(void *arg) {
 		fds.fd = ntyGetSocket(pNetwork);
 		fds.events = POLLIN;
 		if (fds.fd == -1) { //disconnect 
-			sleep(60);
+			sleep(1);
 			continue;
 		}
 		ret = poll(&fds, 1, 5);
@@ -819,7 +819,7 @@ static void* ntyRecvProc(void *arg) {
 #endif
 				}
 
-				sleep(60);
+				sleep(1);
 				continue;
 			}
 			LOG("\n%d.%d.%d.%d:%d, length:%d --> %x\n", *(unsigned char*)(&addr.sin_addr.s_addr), *((unsigned char*)(&addr.sin_addr.s_addr)+1),
@@ -844,7 +844,7 @@ static void* ntyRecvProc(void *arg) {
 					if (NULL == friendInfo) {
 						FriendsInfo *pFriend = (FriendsInfo*)malloc(sizeof(FriendsInfo));
 						assert(pFriend);
-						pFriend->sockfd = ntyGetSocket(pNetwork);;
+						pFriend->sockfd = ntyGetSocket(pNetwork);
 						pFriend->isP2P = 0;
 						pFriend->counter = 0;
 						pFriend->addr = ntyU8ArrayToU32(&buf[NTY_PROTO_LOGIN_ACK_FRIENDSLIST_ADDR_IDX(i)]);
