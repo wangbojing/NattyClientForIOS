@@ -274,6 +274,7 @@ static void* ntyTcpNetworkCtor(void *self, va_list *params) {
 		LOG("Socket Error:%s\n", strerror(errno));
 		return network;
 	}
+	signal(SIGPIPE, SIG_IGN);
 
 	memset(&network->addr, 0, sizeof(network->addr));
 	network->addr.sin_family = AF_INET;
