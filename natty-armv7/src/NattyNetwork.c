@@ -307,6 +307,8 @@ static void* ntyTcpNetworkDtor(void *self) {
 
 static int ntyTcpNetworkSendFrame(void *self, struct sockaddr_in *to, U8 *buf, int len) {
 	Network *network = self;
+
+	if (network->sockfd == -1) return -1;
 	
 	memcpy(&network->addr, to, sizeof(struct sockaddr_in));
 	bzero(network->buffer, CACHE_BUFFER_SIZE);
@@ -324,6 +326,8 @@ static int ntyTcpNetworkSendFrame(void *self, struct sockaddr_in *to, U8 *buf, i
 static int ntyTcpNetworkRecvFrame(void *self, U8 *buf, int len, struct sockaddr_in *from) {
 	Network *network = self;
 	int nSize = sizeof(struct sockaddr_in);
+
+	if (network->sockfd == -1) return -1;
 
 	getpeername(network->sockfd,(struct sockaddr*)from, &nSize);
 	
