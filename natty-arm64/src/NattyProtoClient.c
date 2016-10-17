@@ -230,8 +230,12 @@ void* ntyProtoClientHeartBeat(void *_self) {
 	proto->heartbeartRun = 1;
 	
 	while (1) {		
-		void *pNetwork = ntyGetNetworkInstance();
+		Network *pNetwork = ntyGetNetworkInstance();
 		if (pNetwork == NULL) {
+			sleep(HEARTBEAT_TIMEOUT);	
+			continue;
+		}
+		if (pNetwork->sockfd == -1) {
 			sleep(HEARTBEAT_TIMEOUT);	
 			continue;
 		}

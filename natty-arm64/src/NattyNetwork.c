@@ -280,6 +280,9 @@ static void* ntyTcpNetworkCtor(void *self, va_list *params) {
 	network->addr.sin_family = AF_INET;
 	network->addr.sin_port = htons(SERVER_PORT);
 	network->addr.sin_addr.s_addr = inet_addr(SERVER_NAME);
+	
+	const char chOpt=1;
+	setsockopt(network->sockfd, SOL_SOCKET, TCP_NODELAY, &chOpt, sizeof(char));   
 
 	res = connect(network->sockfd, (struct sockaddr*)(&network->addr), sizeof(struct sockaddr));
 	LOG("connect failed :%d --> %s\n", res, strerror(errno));
