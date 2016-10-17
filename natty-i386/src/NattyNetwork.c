@@ -57,6 +57,8 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <errno.h>
+#include <linux/tcp.h>
+
 
 #include "NattyNetwork.h"
 
