@@ -267,25 +267,64 @@ static const NetworkOpera ntyNetworkOpera = {
 
 const void *pNtyNetworkOpera = &ntyNetworkOpera;
 
+static int ntySetupTcpClient(Network *network, const char *host, const char *service) {
+	int res = -1;
+	struct addrinfo *result, *rp;
+	struct addrinfo hints;
+	
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+	hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_protocol = 0;          /* Any protocol */
+
+	int ret = getaddrinfo(host, service, &hints, &result);
+	if (ret != 0) {
+		fprintf(stderr, "getaddrinfo: %d %s\n", ret,  gai_strerror(ret));
+		return -1;
+	}
+#if 0
+	for (rp = result; rp != NULL; rp = rp->ai_next) {
+		network->sockfd = socket(AF_INET, SOCK_STREAM, 0)
+	}
+#else
+	rp = result;
+	while (rp != NULL) {
+		network->sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		if (network->sockfd < 0) continue;
+
+		res = connect(network->sockfd, rp->ai_addr, rp->ai_addrlen);
+		if (res == 0) {
+			memcpy(&network->addr, rp->ai_addr, rp->ai_addrlen);
+			break;
+		}
+
+		close(network->sockfd);
+		network->sockfd = -1;
+		rp = rp->ai_next;
+	}
+
+	freeaddrinfo(result);
+
+	return network->sockfd;
+#endif
+}
 
 
 static void* ntyTcpNetworkCtor(void *self, va_list *params) {
 	int res = -1;
 	Network *network = self;
-
+	
+#if 0
 	if ((network->sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		LOG("Socket Error:%s\n", strerror(errno));
 		return network;
 	}
-	signal(SIGPIPE, SIG_IGN);
-	
+
 	memset(&network->addr, 0, sizeof(network->addr));
 	network->addr.sin_family = AF_INET;
 	network->addr.sin_port = htons(SERVER_PORT);
 	network->addr.sin_addr.s_addr = inet_addr(SERVER_NAME);
-	
-	const char chOpt=1;
-	setsockopt(network->sockfd, SOL_SOCKET, TCP_NODELAY, &chOpt, sizeof(char));   
 
 	res = connect(network->sockfd, (struct sockaddr*)(&network->addr), sizeof(struct sockaddr));
 	LOG("connect failed :%d --> %s\n", res, strerror(errno));
@@ -294,6 +333,11 @@ static void* ntyTcpNetworkCtor(void *self, va_list *params) {
 		network->sockfd = -1;
 		return network;
 	}
+#else
+
+	ntySetupTcpClient(network, SERVER_HOSTNAME, "echo");
+
+#endif
 
 	return network;
 }

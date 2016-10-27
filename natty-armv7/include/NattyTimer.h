@@ -69,6 +69,55 @@ typedef struct _TIMEROPERA {
 } TimerOpera;
 
 
+
+
+#define MAX_TIMER_NUM			1000
+#define CURRENT_TIMER_NUM		20
+#define TIMER_START				1
+#define TIMER_TICK				1
+#define INVALID_TIMER_ID		(-1)
+
+typedef int timer_id;
+typedef timer_id TimerId;
+typedef int timer_expiry(timer_id id, void *user_data, int len);
+
+/**
+ * The type of the timer
+ */
+struct timer {
+	LIST_ENTRY(timer) entries;	/**< list entry		*/	
+	
+	timer_id id;			/**< timer id		*/
+
+	int interval;			/**< timer interval(second)*/
+	int elapse; 			/**< 0 -> interval 	*/
+
+	timer_expiry *cb;		/**< call if expiry 	*/
+	void *user_data;		/**< callback arg	*/
+	int len;			/**< user_data length	*/
+};
+
+/**
+ * The timer list
+ */
+struct timer_list {
+	LIST_HEAD(listheader, timer) header;	/**< list header 	*/
+	int num;				/**< timer entry number */
+	int max_num;				/**< max entry number	*/
+
+	void (*old_sigfunc)(int);		/**< save previous signal handler */
+	void (*new_sigfunc)(int);		/**< our signal handler	*/
+
+	struct itimerval ovalue;		/**< old timer value */
+	struct itimerval value;			/**< our internal timer value */
+};
+
+
+
+
+
+
+
 #define TIMER_TICK		200
 #define MS(x)		(x*1000)
 
