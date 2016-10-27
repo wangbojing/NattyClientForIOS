@@ -293,6 +293,14 @@ static int ntySetupTcpClient(Network *network, const char *host, const char *ser
 		network->sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		if (network->sockfd < 0) continue;
 
+		if (rp->ai_family == AF_INET) {
+			struct sockaddr_in *addr = (struct sockaddr_in*)(rp->ai_addr);
+			addr->sin_port = htons(SERVER_PORT);
+		} else if (rp->ai_family == AF_INET6) {
+			struct sockaddr_in6 *addr = (struct sockaddr_in6*)(rp->ai_addr);
+			addr->sin6_port = htons(SERVER_PORT);
+		}
+
 		res = connect(network->sockfd, rp->ai_addr, rp->ai_addrlen);
 		if (res == 0) {
 			memcpy(&network->addr, rp->ai_addr, rp->ai_addrlen);
