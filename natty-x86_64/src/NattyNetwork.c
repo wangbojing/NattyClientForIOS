@@ -281,7 +281,7 @@ static int ntySetupTcpClient(Network *network, const char *host, const char *ser
 	int ret = getaddrinfo(host, service, &hints, &result);
 	if (ret != 0) {
 		fprintf(stderr, "getaddrinfo: %d %s\n", ret,  gai_strerror(ret));
-		return -1;
+		return -15;
 	}
 #if 0
 	for (rp = result; rp != NULL; rp = rp->ai_next) {

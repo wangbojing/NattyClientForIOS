@@ -281,7 +281,7 @@ static int ntySetupTcpClient(Network *network, const char *host, const char *ser
 	int ret = getaddrinfo(host, service, &hints, &result);
 	if (ret != 0) {
 		fprintf(stderr, "getaddrinfo: %d %s\n", ret,  gai_strerror(ret));
-		return -1;
+		return -15;
 	}
 #if 0
 	for (rp = result; rp != NULL; rp = rp->ai_next) {
@@ -290,7 +290,7 @@ static int ntySetupTcpClient(Network *network, const char *host, const char *ser
 #else
 	rp = result;
 	while (rp != NULL) {
-		network->sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		network->sockfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 		if (network->sockfd < 0) continue;
 
 		if (rp->ai_family == AF_INET) {
