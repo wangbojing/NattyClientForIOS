@@ -46,6 +46,15 @@
 #ifndef __NATTY_TIMER_H__
 #define __NATTY_TIMER_H__
 
+#include <signal.h>
+#include <sys/time.h>
+#include <string.h>
+
+#include <netdb.h>
+#include <time.h>
+#include <sys/queue.h>
+
+
 #include <pthread.h>
 #include "NattyAbstractClass.h"
 
