@@ -215,6 +215,35 @@ void* ntyProtoClientDtor(void *_self) {
  * 
  * send to server addr
  */
+	
+int ntyHeartBeatCb(timer_id id, void *arg, int len) {
+	NattyProto *proto = arg;
+	U8 buf[NTY_LOGIN_ACK_LENGTH] = {0}; 
+	int ret = -1;
+
+	void *pNetwork = ntyGetNetworkInstance();
+	if (pNetwork == NULL) { 
+		return -1;
+	}
+	bzero(buf, NTY_LOGIN_ACK_LENGTH);
+	
+	if (proto->devid == 0) return -2; //set devid
+
+	buf[NEY_PROTO_VERSION_IDX] = NEY_PROTO_VERSION; 
+	buf[NTY_PROTO_MESSAGE_TYPE] = (U8) MSG_REQ; 
+	buf[NTY_PROTO_TYPE_IDX] = NTY_PROTO_HEARTBEAT_REQ;	
+#if 0
+	*(C_DEVID*)(&buf[NTY_PROTO_DEVID_IDX]) = proto->devid;
+#else
+	memcpy(&buf[NTY_PROTO_DEVID_IDX], &proto->devid, sizeof(C_DEVID));
+#endif
+	len = NTY_PROTO_LOGIN_REQ_CRC_IDX+sizeof(U32);
+	
+	ret = ntySendFrame(pNetwork, &proto->serveraddr, buf, len);
+
+	return ret;
+}
+
 
 void* ntyProtoClientHeartBeat(void *_self) {
 	NattyProto *proto = _self;
@@ -228,7 +257,7 @@ void* ntyProtoClientHeartBeat(void *_self) {
 		return NULL;	
 	}	
 	proto->heartbeartRun = 1;
-	
+#if 0	
 	while (1) {		
 		Network *pNetwork = ntyGetNetworkInstance();
 		if (pNetwork == NULL) {
@@ -256,6 +285,9 @@ void* ntyProtoClientHeartBeat(void *_self) {
 		
 		n = ntySendFrame(pNetwork, &proto->serveraddr, buf, len);
 	}
+#else
+	add_timer(HEARTBEAT_TIMEOUT, ntyHeartBeatCb, proto, sizeof(NattyProto));
+#endif
 }
 
 /*

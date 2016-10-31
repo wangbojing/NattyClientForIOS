@@ -422,9 +422,16 @@ void *ntyGetNetworkInstance(void) {
 }
 
 void* ntyNetworkRelease(void *self) {	
-	Delete(self);
-	pNetworkOpera = NULL;
-	return self;
+#if 0
+		Delete(self);
+		pNetworkOpera = NULL;
+		return self;
+#else
+		Delete(pNetworkOpera);
+		pNetworkOpera = NULL;
+		return pNetworkOpera;
+#endif
+	
 }
 
 int ntySendFrame(void *self, struct sockaddr_in *to, U8 *buf, int len) {
