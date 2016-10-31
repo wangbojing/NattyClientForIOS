@@ -139,6 +139,8 @@ void *ntyReconnectTimerInstance(void);
 int ntyStartTimer(void *self,  HANDLE_TIMER func);
 int ntyStopTimer(void *self);
 
+timer_id add_timer(int interval, timer_expiry *cb, void *user_data, int len);
+int del_timer(timer_id id);
 
 
 #endif
