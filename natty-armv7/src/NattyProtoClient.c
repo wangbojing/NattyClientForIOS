@@ -1210,7 +1210,7 @@ static void* ntyRecvProc(void *arg) {
 				//ntyReconnect(pNetwork);
 				//Release Network
 				
-				ntydbg("Prepare to Reconnect to server\n");
+				LOG("Prepare to Reconnect to server, proto->recvLen:%d\n", proto->recvLen);
 				if (ntyGetSocket(pNetwork) != -1){
 					if (proto->onProxyDisconnect) {
 						proto->onProxyDisconnect(0);
