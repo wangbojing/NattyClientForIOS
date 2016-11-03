@@ -224,7 +224,7 @@ void* ntyProtoClientDtor(void *_self) {
 
 
 int ntyHeartBeatCb(timer_id id, void *arg, int len) {
-	NattyProto *proto = arg;
+	NattyProto* proto = ntyProtoInstance();
 	U8 buf[NTY_LOGIN_ACK_LENGTH] = {0};	
 	int ret = -1;
 
@@ -293,7 +293,7 @@ void* ntyProtoClientHeartBeat(void *_self) {
 		n = ntySendFrame(pNetwork, &proto->serveraddr, buf, len);
 	}
 #else
-	add_timer(HEARTBEAT_TIMEOUT, ntyHeartBeatCb, proto, sizeof(NattyProto));
+	add_timer(HEARTBEAT_TIMEOUT, ntyHeartBeatCb, NULL, 0);
 #endif
 }
 

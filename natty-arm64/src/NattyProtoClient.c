@@ -253,7 +253,7 @@ int ntyHeartBeatCb(timer_id id, void *arg, int len) {
 
 
 void* ntyProtoClientHeartBeat(void *_self) {
-	NattyProto *proto = _self;
+	NattyProto* proto = ntyProtoInstance();
 
 	int len, n;	
 	U8 buf[NTY_LOGIN_ACK_LENGTH] = {0};	
