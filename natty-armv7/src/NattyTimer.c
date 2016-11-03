@@ -397,7 +397,7 @@ int del_timer(timer_id id)
 			
 	struct timer *node = timer_list.header.lh_first;
 	for ( ; node != NULL; node = node->entries.le_next) {
-		printf("Total timer num %d/timer id %d.\n", timer_list.num, id);
+		ntydbg("Total timer num %d/timer id %d.\n", timer_list.num, id);
 		if (id == node->id) {
 			LIST_REMOVE(node, entries);
 			timer_list.num--;
