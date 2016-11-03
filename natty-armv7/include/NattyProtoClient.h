@@ -77,6 +77,9 @@ DEVID ntyGetFromDevID(void);
 void ntySetProxyDisconnect(PROXY_CALLBACK_CLINET cb);
 void ntySetProxyReconnect(PROXY_CALLBACK_CLINET cb);
 
+void ntySetPacketRecv(PROXY_CALLBACK_CLINET cb);
+void ntySetPacketResult(PROXY_CALLBACK_CLINET cb);
+
 
 
 void ntySetDevId(DEVID id);
