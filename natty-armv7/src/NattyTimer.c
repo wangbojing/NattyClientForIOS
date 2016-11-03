@@ -349,6 +349,7 @@ int destroy_timer(void)
 timer_id add_timer(int interval, timer_expiry *cb, void *user_data, int len)
 {
 	struct timer *node = NULL;	
+	pthread_mutex_t blank_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	if (cb == NULL || interval <= 0) {
 		return INVALID_TIMER_ID;
@@ -376,6 +377,7 @@ timer_id add_timer(int interval, timer_expiry *cb, void *user_data, int len)
 	node->interval = interval;
 	node->elapse = 0;
 	node->id = timer_list.num;
+	memcpy(&node->timer_mutex, &blank_mutex, sizeof(node->timer_mutex));
 	
 	LIST_INSERT_HEAD(&timer_list.header, node, entries);
 	
@@ -401,11 +403,13 @@ int del_timer(timer_id id)
 		if (id == node->id) {
 			LIST_REMOVE(node, entries);
 			timer_list.num--;
-			
+
+			pthread_mutex_lock(&node->timer_mutex);
 			if (node->user_data != NULL)
 				free(node->user_data);
 
 			free(node);
+			pthread_mutex_unlock(&node->timer_mutex);
 			return 0;
 		}
 	}
@@ -422,7 +426,9 @@ static void sig_func(int signo)
 		node->elapse++;
 		if(node->elapse >= node->interval) {
 			node->elapse = 0;
+			pthread_mutex_lock(&node->timer_mutex);
 			node->cb(node->id, node->user_data, node->len);
+			pthread_mutex_unlock(&node->timer_mutex);
 		}
 	}
 }
