@@ -1191,7 +1191,7 @@ static void* ntyRecvProc(void *arg) {
 
 	int ret;
 
-	ntydbg(" ntyRecvProc %d\n", fds.fd);
+	//ntydbg(" ntyRecvProc %d\n", fds.fd);
 	while (1) {
 		
 		void *pNetwork = ntyGetNetworkInstance();
