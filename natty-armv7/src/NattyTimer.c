@@ -267,6 +267,8 @@ void *ntyReconnectTimerInstance(void) {
 	return pReconnectTimer;
 }
 
+
+
 #if 1 //WHEEL Alg
 
 static struct timer_list timer_list;
@@ -365,6 +367,9 @@ timer_id add_timer(int interval, timer_expiry *cb, void *user_data, int len)
 		node->user_data = malloc(len);
 		memcpy(node->user_data, user_data, len);
 		node->len = len;
+	} else {
+		node->user_data = NULL;
+		node->len = 0;
 	}
 
 	node->cb = cb;
@@ -397,7 +402,9 @@ int del_timer(timer_id id)
 			LIST_REMOVE(node, entries);
 			timer_list.num--;
 			
-			free(node->user_data);
+			if (node->user_data != NULL)
+				free(node->user_data);
+
 			free(node);
 			return 0;
 		}
@@ -432,6 +439,8 @@ static char *fmt_time(char *tstr)
 }
 
 #endif
+
+
 
 
 

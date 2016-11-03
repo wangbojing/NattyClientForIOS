@@ -54,8 +54,6 @@
 #include <time.h>
 #include <sys/queue.h>
 
-
-
 #include <pthread.h>
 #include "NattyAbstractClass.h"
 
@@ -77,7 +75,6 @@ typedef struct _TIMEROPERA {
 	int (*start)(void *_self, HANDLE_TIMER fun);
 	int (*stop)(void *_self);
 } TimerOpera;
-
 
 
 
@@ -125,9 +122,7 @@ struct timer_list {
 
 
 
-
-
-#define TIMER_TICK		200
+//#define TIMER_TICK		200
 #define MS(x)		(x*1000)
 
 #define RECONNECT_TICK		60
@@ -139,7 +134,13 @@ void *ntyReconnectTimerInstance(void);
 int ntyStartTimer(void *self,  HANDLE_TIMER func);
 int ntyStopTimer(void *self);
 
+
+int init_timer(int count);
+
+int destroy_timer(void);
+
 timer_id add_timer(int interval, timer_expiry *cb, void *user_data, int len);
+
 int del_timer(timer_id id);
 
 

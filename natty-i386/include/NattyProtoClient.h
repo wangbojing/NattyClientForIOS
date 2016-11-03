@@ -60,7 +60,7 @@ typedef void (*PROXY_CALLBACK_CLINET)(int len);
 typedef void (*PROXY_HANDLE_CLIENT)(DEVID id, int len);
 
 #define CLIENT_BUFFER_SIZE		1024
-
+#define NTY_BIGBUFFER_SIZE		30*1024
 
 int ntySendDataPacket(DEVID toId, U8 *data, int length);
 int ntySendMassDataPacket(U8 *data, int length);
@@ -91,6 +91,13 @@ void ntyUnBindClient(DEVID did);
 
 DEVID* ntyGetFriendsList(int *Count);
 void ntyReleaseFriendsList(DEVID **list);
+
+U8 *ntyGetRecvBigBuffer(void);
+U8 *ntyGetSendBigBuffer(void);
+int ntyGetRecvBigLength(void);
+
+int ntySendBigBuffer(U8 *buffer, int length, DEVID toId);
+
 
 #endif
 

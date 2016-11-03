@@ -365,10 +365,11 @@ static int ntyTcpNetworkSendFrame(void *self, struct sockaddr_in *to, U8 *buf, i
 	memcpy(&network->addr, to, sizeof(struct sockaddr_in));
 	bzero(network->buffer, CACHE_BUFFER_SIZE);
 	memcpy(network->buffer, buf, len);
-	
+#if 0
 	if (buf[NTY_PROTO_MESSAGE_TYPE] == MSG_REQ) {
 		*(U32*)(&network->buffer[NTY_PROTO_ACKNUM_IDX]) = network->ackNum;
 	}
+#endif
 	network->length = len;
 	*(U32*)(&network->buffer[len-sizeof(U32)]) = ntyGenCrcValue(network->buffer, len-sizeof(U32));
 	
@@ -380,7 +381,6 @@ static int ntyTcpNetworkRecvFrame(void *self, U8 *buf, int len, struct sockaddr_
 	int nSize = sizeof(struct sockaddr_in);
 
 	if (network->sockfd == -1) return -1;
-
 	getpeername(network->sockfd,(struct sockaddr*)from, &nSize);
 	
 	return recv(network->sockfd, buf, len, 0);
@@ -423,15 +423,14 @@ void *ntyGetNetworkInstance(void) {
 
 void* ntyNetworkRelease(void *self) {	
 #if 0
-		Delete(self);
-		pNetworkOpera = NULL;
-		return self;
+	Delete(self);
+	pNetworkOpera = NULL;
+	return self;
 #else
-		Delete(pNetworkOpera);
-		pNetworkOpera = NULL;
-		return pNetworkOpera;
+	Delete(pNetworkOpera);
+	pNetworkOpera = NULL;
+	return pNetworkOpera;
 #endif
-	
 }
 
 int ntySendFrame(void *self, struct sockaddr_in *to, U8 *buf, int len) {
