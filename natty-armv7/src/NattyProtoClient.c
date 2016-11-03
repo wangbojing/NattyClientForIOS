@@ -820,6 +820,7 @@ static int ntyReconnectTimerCb(timer_id id, void *user_data, int len) {
 		if (proto->onProxyReconnect) {
 			proto->onProxyReconnect(0);
 		}
+		ntydbg(" ntyReconnectTimerCb --> end");
 	}
 }
 
@@ -1222,6 +1223,7 @@ static void* ntyRecvProc(void *arg) {
 #endif
 				}
 
+				ntydbg(" Release Network ---> \n");
 				sleep(1);
 				continue;
 			}
