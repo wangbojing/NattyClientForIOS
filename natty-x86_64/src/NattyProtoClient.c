@@ -92,6 +92,8 @@ typedef struct _NATTYPROTOCOL {
 	PROXY_CALLBACK onProxyReconnect;
 	PROXY_CALLBACK onBindResult;
 	PROXY_CALLBACK onUnBindResult;
+	PROXY_CALLBACK onPacketRecv;
+	PROXY_CALLBACK onPacketSuccess;
 	U8 heartbeartRun;
 	U8 p2pHeartbeatRun;
 	U8 u8RecvExitFlag;
@@ -154,7 +156,11 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 	proto->onProxyReconnect = NULL;
 	proto->onUnBindResult = NULL;
 	proto->onBindResult = NULL;
+	proto->onPacketRecv = NULL;
+	proto->onPacketSuccess = NULL;
 #endif
+
+	init_timer(CURRENT_TIMER_NUM);
 
 #if 1 //server addr init
 #if 0 //android JNI don't support gethostbyname
