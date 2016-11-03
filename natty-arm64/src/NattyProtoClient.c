@@ -64,6 +64,7 @@ static void ntySendLogin(void *self);
 static void ntySendLogout(void *self);
 static void ntySendTimeout(int len);
 static void* ntyRecvProc(void *arg);
+void *ntyProtoInstance(void);
 
 
 #if 1 //
