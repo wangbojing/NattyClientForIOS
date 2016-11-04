@@ -272,6 +272,7 @@ void *ntyReconnectTimerInstance(void) {
 #if 1 //WHEEL Alg
 
 static struct timer_list timer_list;
+static pthread_mutex_t timer_mutex[MAX_TIMER_NUM];
 
 static void sig_func(int signo);
 
