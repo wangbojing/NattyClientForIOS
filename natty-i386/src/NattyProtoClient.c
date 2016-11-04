@@ -248,6 +248,7 @@ int ntyHeartBeatCb(timer_id id, void *arg, int len) {
 	len = NTY_PROTO_LOGIN_REQ_CRC_IDX+sizeof(U32);
 	
 	ret = ntySendFrame(pNetwork, &proto->serveraddr, buf, len);
+	ntylog(" ntyHeartBeatCb --> ntySendFrame\n");
 
 	return ret;
 }
@@ -717,6 +718,15 @@ int ntyStartupClient(void) {
 
 	return ntyGetNetworkStatus();
 }
+
+
+void ntyLogoutClient(void) {
+	NattyProto* proto = ntyProtoInstance();
+	if (proto) {
+		ntySendLogout(proto);
+	}
+}
+
 
 void ntyShutdownClient(void) {
 	NattyProto* proto = ntyProtoInstance();

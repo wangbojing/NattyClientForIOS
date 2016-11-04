@@ -719,6 +719,15 @@ int ntyStartupClient(void) {
 	return ntyGetNetworkStatus();
 }
 
+
+void ntyLogoutClient(void) {
+	NattyProto* proto = ntyProtoInstance();
+	if (proto) {
+		ntySendLogout(proto);
+	}
+}
+
+
 void ntyShutdownClient(void) {
 	NattyProto* proto = ntyProtoInstance();
 	void *pNetwork = ntyNetworkInstance();

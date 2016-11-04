@@ -66,6 +66,7 @@ int ntySendDataPacket(DEVID toId, U8 *data, int length);
 int ntySendMassDataPacket(U8 *data, int length);
 
 int ntyStartupClient(void);
+void ntyLogoutClient(void);
 void ntyShutdownClient(void);
 
 
