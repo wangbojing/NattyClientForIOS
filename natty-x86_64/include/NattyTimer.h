@@ -103,7 +103,8 @@ struct timer {
 	void *user_data;		/**< callback arg	*/
 	int len;			/**< user_data length	*/
 
-	pthread_mutex_t timer_mutex;
+	int enable;
+
 };
 
 /**

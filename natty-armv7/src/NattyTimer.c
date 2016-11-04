@@ -272,7 +272,6 @@ void *ntyReconnectTimerInstance(void) {
 #if 1 //WHEEL Alg
 
 static struct timer_list timer_list;
-static pthread_mutex_t timer_mutex[MAX_TIMER_NUM];
 
 static void sig_func(int signo);
 
@@ -378,7 +377,7 @@ timer_id add_timer(int interval, timer_expiry *cb, void *user_data, int len)
 	node->interval = interval;
 	node->elapse = 0;
 	node->id = timer_list.num;
-	memcpy(&timer_mutex[node->id], &blank_mutex, sizeof(timer_mutex[node->id]));
+	node->enable = 1;
 	
 	LIST_INSERT_HEAD(&timer_list.header, node, entries);
 	
@@ -402,6 +401,7 @@ int del_timer(timer_id id)
 	for ( ; node != NULL; node = node->entries.le_next) {
 		ntydbg("Total timer num %d/timer id %d.\n", timer_list.num, id);
 		if (id == node->id) {
+#if 0
 			LIST_REMOVE(node, entries);
 			timer_list.num--;
 
@@ -411,6 +411,9 @@ int del_timer(timer_id id)
 
 			free(node);
 			pthread_mutex_unlock(&timer_mutex[id]);
+#else
+			node->enable = 0;
+#endif
 			return 0;
 		}
 	}
@@ -425,11 +428,19 @@ static void sig_func(int signo)
 	struct timer *node = timer_list.header.lh_first;
 	for ( ; node != NULL; node = node->entries.le_next) {
 		node->elapse++;
+		if (node->enable == 0) {
+			LIST_REMOVE(node, entries);
+			timer_list.num--;
+
+			if (node->user_data != NULL)
+				free(node->user_data);
+			
+			free(node);
+			continue;
+		}
 		if(node->elapse >= node->interval) {
 			node->elapse = 0;
-			pthread_mutex_lock(&timer_mutex[node->id]);
 			node->cb(node->id, node->user_data, node->len);
-			pthread_mutex_unlock(&timer_mutex[node->id]);
 		}
 	}
 }

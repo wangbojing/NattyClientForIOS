@@ -102,7 +102,8 @@ struct timer {
 	timer_expiry *cb;		/**< call if expiry 	*/
 	void *user_data;		/**< callback arg	*/
 	int len;			/**< user_data length	*/
-	
+
+	int enable;
 };
 
 /**
