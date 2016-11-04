@@ -161,8 +161,6 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 	proto->onPacketSuccess = NULL;
 #endif
 
-	init_timer(CURRENT_TIMER_NUM);
-
 #if 1 //server addr init
 #if 0 //android JNI don't support gethostbyname
 	server = gethostbyname(SERVER_NAME);    
@@ -711,6 +709,9 @@ int ntyStartupClient(void) {
 	
 	NattyProto* proto = ntyProtoInstance();
 	if (proto) {
+		proto->u8RecvExitFlag = 0;
+		init_timer(CURRENT_TIMER_NUM);
+		
 		ntySendLogin(proto);
 		ntySetupHeartBeatThread(proto); //setup heart proc
 		ntySetupRecvProcThread(proto); //setup recv proc
@@ -730,11 +731,14 @@ void ntyLogoutClient(void) {
 
 void ntyShutdownClient(void) {
 	NattyProto* proto = ntyProtoInstance();
+	ntySendLogout(proto);
+	
 	void *pNetwork = ntyNetworkInstance();
 	ntyNetworkRelease(pNetwork);
 
+	destroy_timer();
 	//proto->u8HeartbeatExistFlag = 1;
-	//proto->u8RecvExitFlag = 1;
+	proto->u8RecvExitFlag = 1;
 	
 	proto->recvThread_id = 0;
 	proto->heartbeatThread_id = 0;
