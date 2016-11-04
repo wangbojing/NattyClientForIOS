@@ -245,8 +245,9 @@ int ntyHeartBeatCb(timer_id id, void *arg, int len) {
 	memcpy(&buf[NTY_PROTO_DEVID_IDX], &proto->devid, sizeof(C_DEVID));
 #endif
 	len = NTY_PROTO_LOGIN_REQ_CRC_IDX+sizeof(U32);
-	
+
 	ret = ntySendFrame(pNetwork, &proto->serveraddr, buf, len);
+	ntylog(" ntyHeartBeatCb --> ntySendFrame\n");
 
 	return ret;
 }
@@ -293,7 +294,8 @@ void* ntyProtoClientHeartBeat(void *_self) {
 		n = ntySendFrame(pNetwork, &proto->serveraddr, buf, len);
 	}
 #else
-	add_timer(HEARTBEAT_TIMEOUT, ntyHeartBeatCb, NULL, 0);
+	int ret = add_timer(HEARTBEAT_TIMEOUT, ntyHeartBeatCb, NULL, 0);
+	ntylog(" ret : %d\n", ret);
 #endif
 }
 

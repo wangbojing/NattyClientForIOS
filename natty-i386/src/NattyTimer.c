@@ -420,9 +420,9 @@ int del_timer(timer_id id)
 }
 
 /* Tick Bookkeeping */
-static void sig_func(int signo)
-{
+static void sig_func(int signo) {
 	struct timer *node = timer_list.header.lh_first;
+#if 0
 	for ( ; node != NULL; node = node->entries.le_next) {
 		node->elapse++;
 		if (node->enable == 0) {
@@ -439,8 +439,34 @@ static void sig_func(int signo)
 			node->elapse = 0;
 			node->cb(node->id, node->user_data, node->len);
 		}
+
+		
 	}
+#else
+	while (node != NULL) {
+		struct timer *cnode = node;
+		node = node->entries.le_next;
+
+		cnode->elapse++;
+		if (cnode->enable == 0) {
+			LIST_REMOVE(cnode, entries);
+			timer_list.num--;
+
+			if (cnode->user_data != NULL)
+				free(cnode->user_data);
+			
+			free(cnode);
+			continue;
+		}
+
+		if(cnode->elapse >= cnode->interval) {
+			cnode->elapse = 0;
+			cnode->cb(cnode->id, cnode->user_data, cnode->len);
+		}
+	}
+#endif
 }
+
 
 static char *fmt_time(char *tstr)
 {
