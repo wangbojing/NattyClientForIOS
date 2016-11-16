@@ -71,7 +71,7 @@ do_lipo () {
     LIPO_FLAGS=
     for ARCH in $FF_ALL_ARCHS
     do
-        LIPO_FLAGS="$LIPO_FLAGS $UNI_BUILD_ROOT/natty-$ARCH/output/lib/$LIB_FILE"
+        LIPO_FLAGS="$LIPO_FLAGS $UNI_BUILD_ROOT/natty-$ARCH/$LIB_FILE"
     done
 
     xcrun lipo -create $LIPO_FLAGS -output $UNI_BUILD_ROOT/build/universal/lib/$LIB_FILE
