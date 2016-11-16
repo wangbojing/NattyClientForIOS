@@ -57,7 +57,6 @@
 #include "NattyUtils.h"
 #include "NattyNetwork.h"
 
-
 static void ntySetupHeartBeatThread(void* self);
 static void ntySetupRecvProcThread(void *self);
 static void ntySendLogin(void *self);
@@ -113,6 +112,8 @@ typedef struct _NATTYPROTO_OPERA {
 	void (*logout)(void *_self); //argument is optional
 	void (*proxyReq)(void *_self, C_DEVID toId, U8 *buf, int length);
 	void (*proxyAck)(void *_self, C_DEVID friId, U32 ack);
+	void (*fenceReq)(void *_self, C_DEVID toId, U8 *buf, int length);
+	void (*fenceAck)(void *_self, C_DEVID friId, U32 ack);
 	void (*bind)(void *_self, C_DEVID did);
 	void (*unbind)(void *_self, C_DEVID did);
 #if (NEY_PROTO_VERSION > 'B')
@@ -129,6 +130,14 @@ typedef struct _NATTYPROTO_OPERA {
 
 #endif
 
+
+
+int u32DataLength = 0;
+static U8 u8RecvBigBuffer[NTY_BIGBUFFER_SIZE] = {0};
+static U8 u8SendBigBuffer[NTY_BIGBUFFER_SIZE] = {0};
+TimerId tBigTimer = -1;
+TimerId tEfenceTimer = -1;
+TimerId tProxyTimer = -1;
 
 
 
@@ -160,6 +169,7 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 	proto->onPacketRecv = NULL;
 	proto->onPacketSuccess = NULL;
 #endif
+
 
 #if 1 //server addr init
 #if 0 //android JNI don't support gethostbyname
@@ -209,6 +219,8 @@ void* ntyProtoClientDtor(void *_self) {
 	return proto;
 }
 
+
+
 /*
  * heartbeat Packet
  * VERSION					1			BYTE
@@ -220,7 +232,6 @@ void* ntyProtoClientDtor(void *_self) {
  * 
  * send to server addr
  */
-
 
 int ntyHeartBeatCb(timer_id id, void *arg, int len) {
 	NattyProto *proto = arg;
@@ -464,6 +475,57 @@ void ntyProtoClientProxyAck(void *_self, C_DEVID toId, U32 ack) {
 }
 
 
+void ntyProtoEfenceReq(void *_self, C_DEVID toId, U8 *buf, int length) {
+	int n = 0;
+	NattyProto *proto = _self;
+
+	buf[NEY_PROTO_VERSION_IDX] = NEY_PROTO_VERSION;
+	buf[NTY_PROTO_MESSAGE_TYPE] = (U8) MSG_REQ;	
+	buf[NTY_PROTO_TYPE_IDX] = NTY_PROTO_EFENCE_REQ;
+
+	LOG("ntyProtoClientProxyReq");
+#if 1
+	memcpy(&buf[NTY_PROTO_EFENCE_SLEFID_IDX], &proto->devid, sizeof(C_DEVID));
+	memcpy(&buf[NTY_PROTO_EFENCE_DESTID_IDX], &toId, sizeof(C_DEVID));
+#else
+	*(C_DEVID*)(&buf[NTY_PROTO_DATAPACKET_DEVID_IDX]) = (C_DEVID) proto->devid;
+	*(C_DEVID*)(&buf[NTY_PROTO_DATAPACKET_DEST_DEVID_IDX]) = toId;
+#endif
+	
+	*(U16*)(&buf[NTY_PROTO_EFENCE_CONTENT_COUNT_IDX]) = (U16)length;
+	length += NTY_PROTO_EFENCE_CONTENT_IDX;
+	length += sizeof(U32);
+
+	LOG("ntyProtoClientProxyReq, length:%d", length);
+	void *pNetwork = ntyNetworkInstance();
+	n = ntySendFrame(pNetwork, &proto->serveraddr, buf, length);
+}
+
+void ntyProtoEfenceAck(void *_self, C_DEVID toId, U32 ack) {
+	int len, n;	
+	NattyProto *proto = _self;
+	U8 buf[RECV_BUFFER_SIZE] = {0}; 
+	
+	buf[NEY_PROTO_VERSION_IDX] = NEY_PROTO_VERSION;
+	buf[NTY_PROTO_TYPE_IDX] = NTY_PROTO_EFENCE_ACK;
+	buf[NTY_PROTO_MESSAGE_TYPE] = (U8) MSG_ACK; 
+#if 0
+	*(C_DEVID*)(&buf[NTY_PROTO_DEVID_IDX]) = (C_DEVID) proto->devid;		
+	*(U32*)(&buf[NTY_PROTO_ACKNUM_IDX]) = ack+1;
+	*(C_DEVID*)(&buf[NTY_PROTO_DEST_DEVID_IDX]) = toId;
+#else
+	memcpy(&buf[NTY_PROTO_EFENCE_ACK_DEVID_IDX], &proto->devid, sizeof(C_DEVID));
+	memcpy(&buf[NTY_PROTO_EFENCE_ACK_SRC_DEVID_IDX], &toId, sizeof(C_DEVID));
+	ack = ack+1;
+	memcpy(&buf[NTY_PROTO_EFENCE_ACK_ACKNUM_IDX], &ack, sizeof(int));
+#endif
+	len = NTY_PROTO_EFENCE_ACK_CRC_IDX+sizeof(U32);				
+
+	void *pNetwork = ntyNetworkInstance();
+	n = ntySendFrame(pNetwork, &proto->serveraddr, buf, len);
+}
+
+
 static const NattyProtoOpera ntyProtoOpera = {
 	sizeof(NattyProto),
 	ntyProtoClientCtor,
@@ -473,6 +535,8 @@ static const NattyProtoOpera ntyProtoOpera = {
 	ntyProtoClientLogout,
 	ntyProtoClientProxyReq,
 	ntyProtoClientProxyAck,
+	ntyProtoEfenceReq,
+	ntyProtoEfenceAck,
 	ntyProtoClientBind,
 	ntyProtoClientUnBind,
 #if (NEY_PROTO_VERSION > 'B')
@@ -568,6 +632,20 @@ static void ntySendLogout(void *self) {
 	}
 }
 
+static int ntySendProxyDataCb(timer_id id, void *user_data, int len) {
+	NattyProto* proto = ntyProtoInstance();
+	if (proto && proto->onPacketSuccess) {
+		proto->onPacketSuccess(1); //Failed
+		if (tProxyTimer != -1) {
+			del_timer(tProxyTimer);
+			tProxyTimer = -1;
+		}
+	}
+
+	return 0;
+}
+
+
 int ntySendDataPacket(C_DEVID toId, U8 *data, int length) {
 	int n = 0;
 	void *self = ntyProtoInstance();
@@ -576,28 +654,17 @@ int ntySendDataPacket(C_DEVID toId, U8 *data, int length) {
 	
 	U8 buf[NTY_PROXYDATA_PACKET_LENGTH] = {0};
 	
-#if 0
-	buf[NEY_PROTO_VERSION_IDX] = NEY_PROTO_VERSION;
-	buf[NTY_PROTO_MESSAGE_TYPE] = (U8) MSG_REQ;	
-	buf[NTY_PROTO_TYPE_IDX] = NTY_PROTO_DATAPACKET_REQ;
-	*(C_DEVID*)(&buf[NTY_PROTO_DATAPACKET_DEVID_IDX]) = (C_DEVID) proto->devid;
-	*(C_DEVID*)(&buf[NTY_PROTO_DATAPACKET_DEST_DEVID_IDX]) = toId;
-	
-	*(U16*)(&buf[NTY_PROTO_DATAPACKET_CONTENT_COUNT_IDX]) = (U16)length;
-	length += NTY_PROTO_DATAPACKET_CONTENT_IDX;
-	length += sizeof(U32);
-	void *pNetwork = ntyNetworkInstance();
-	n = ntySendFrame(pNetwork, &proto->serveraddr, buf, length);
-#else
+
 	U8 *tempBuf = &buf[NTY_PROTO_DATAPACKET_CONTENT_IDX];
 	memcpy(tempBuf, data, length);
-	//LOG(" toId : %lld \n", toId);
+	LOG(" toId : %lld \n", toId);
+	//tProxyTimer = add_timer(10, ntySendProxyDataCb, NULL, 0);
 	if (proto && (*protoOpera) && (*protoOpera)->proxyReq) {
 		(*protoOpera)->proxyReq(proto, toId, buf, length);
 		return 0;
 	}
 	return -1;
-#endif
+
 	
 }
 
@@ -609,6 +676,40 @@ int ntySendMassDataPacket(U8 *data, int length) {
 
 	return 0;
 }
+
+static int ntySendEfenceDataCb(timer_id id, void *user_data, int len) {
+	NattyProto* proto = ntyProtoInstance();
+	if (proto && proto->onPacketSuccess) {
+		proto->onPacketSuccess(1); //Failed
+		if (tEfenceTimer != -1) {
+			del_timer(tEfenceTimer);
+			tEfenceTimer = -1;
+		}
+	}
+
+	return 0;
+}
+
+
+int ntySendEfencePacket(C_DEVID toId, U8 *data, int length) {
+	int n = 0;
+	void *self = ntyProtoInstance();
+	NattyProtoOpera * const *protoOpera = self;
+	NattyProto *proto = self;
+	
+	U8 buf[NTY_PROXYDATA_PACKET_LENGTH*2] = {0};
+
+	U8 *tempBuf = &buf[NTY_PROTO_EFENCE_CONTENT_IDX];
+	memcpy(tempBuf, data, length);
+	tEfenceTimer = add_timer(10, ntySendEfenceDataCb, NULL, 0);
+	LOG(" toId : %lld \n", toId);
+	if (proto && (*protoOpera) && (*protoOpera)->fenceReq) {
+		(*protoOpera)->fenceReq(proto, toId, buf, length);
+		return 0;
+	}
+	return -1;
+}
+
 
 void ntySetSendSuccessCallback(PROXY_CALLBACK cb) {
 	NattyProto* proto = ntyProtoInstance();
@@ -720,14 +821,12 @@ int ntyStartupClient(void) {
 	return ntyGetNetworkStatus();
 }
 
-
 void ntyLogoutClient(void) {
 	NattyProto* proto = ntyProtoInstance();
 	if (proto) {
 		ntySendLogout(proto);
 	}
 }
-
 
 void ntyShutdownClient(void) {
 	NattyProto* proto = ntyProtoInstance();
@@ -952,12 +1051,6 @@ int ntyAudioPacketEncode(U8 *pBuffer, int length) {
 }
 
 
-
-int u32DataLength = 0;
-static U8 u8RecvBigBuffer[NTY_BIGBUFFER_SIZE] = {0};
-static U8 u8SendBigBuffer[NTY_BIGBUFFER_SIZE] = {0};
-TimerId tBigTimer = -1;
-
 int ntyGetRecvBigLength(void) {
 	return u32DataLength;
 }
@@ -1144,6 +1237,44 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 			tBigTimer = -1;
 		}
 		LOG(" onPacketSuccess --> ");
+		if (proto->onPacketSuccess) {
+			proto->onPacketSuccess(0); //Success
+		}
+	} else if (buf[NTY_PROTO_TYPE_IDX] == NTY_PROTO_EFENCE_REQ) {
+		
+		U8 data[RECV_BUFFER_SIZE] = {0};//NTY_PROTO_DATAPACKET_NOTIFY_CONTENT_IDX
+		U16 recByteCount = ntyU8ArrayToU16(&buf[NTY_PROTO_EFENCE_CONTENT_COUNT_IDX]);
+		C_DEVID friId = 0;
+		ntyU8ArrayToU64(&buf[NTY_PROTO_DEVID_IDX], &friId);
+		U32 ack = ntyU8ArrayToU32(&buf[NTY_PROTO_ACKNUM_IDX]);
+		
+		memcpy(data, buf+NTY_PROTO_EFENCE_CONTENT_IDX, recByteCount);
+		LOG(" efence recv:%s end\n", data);
+
+		memcpy(&proto->fromId, &friId, sizeof(C_DEVID));
+		if (buf[NTY_PROTO_MESSAGE_TYPE] == MSG_RET) {
+			if (proto->onProxyFailed)
+				proto->onProxyFailed(STATUS_NOEXIST);
+			
+		}
+		LOG(" efence proxyAck start");
+		if (arg && (*protoOpera) && (*protoOpera)->proxyAck) {
+			(*protoOpera)->fenceAck(proto, friId, ack);
+		}
+
+		LOG(" efence proxyAck end");
+		if (proto->onProxyCallback) {
+			proto->recvLen -= (NTY_PROTO_EFENCE_CONTENT_IDX+sizeof(U32));
+			proto->onProxyCallback(proto->recvLen);
+		}
+		LOG(" efence onProxyCallback end");
+	} else if (buf[NTY_PROTO_TYPE_IDX] == NTY_PROTO_EFENCE_ACK) {
+		LOG(" efence send success\n");
+		if (tEfenceTimer != -1) {
+			del_timer(tEfenceTimer);
+			tEfenceTimer = -1;
+		}
+		LOG(" efence onPacketSuccess --> ");
 		if (proto->onPacketSuccess) {
 			proto->onPacketSuccess(0); //Success
 		}

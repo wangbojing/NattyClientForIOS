@@ -104,7 +104,6 @@ struct timer {
 	int len;			/**< user_data length	*/
 
 	int enable;
-
 };
 
 /**

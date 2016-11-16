@@ -65,7 +65,6 @@
 #define ntylog(format, ...) 		fprintf(stdout, format, ##__VA_ARGS__)
 #define ntydbg(format, ...) 		fprintf(stdout, format, ##__VA_ARGS__)
 #define LOG(format, ...)			fprintf(stdout, format, ##__VA_ARGS__)
-#define ntyinfo(format, ...)		fprintf(stdout, format, ##__VA_ARGS__)
 #elif (NTY_DEBUG == 2) // Serial
 #define ntylog(format, ...)
 #define ntydbg(format, ...) 		
