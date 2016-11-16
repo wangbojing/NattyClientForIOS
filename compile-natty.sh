@@ -78,6 +78,7 @@ do_lipo () {
     xcrun lipo -info $UNI_BUILD_ROOT/build/universal/lib/$LIB_FILE
 }
 
+
 do_lipo_all () {
     mkdir -p $UNI_BUILD_ROOT/build/universal/lib
     echo "lipo archs: $FF_ALL_ARCHS"
@@ -86,7 +87,7 @@ do_lipo_all () {
         do_lipo "$FF_LIB.a";
     done
 
-    cp -R $UNI_BUILD_ROOT/build/natty-armv7/output/include $UNI_BUILD_ROOT/build/universal/
+    cp -R $UNI_BUILD_ROOT/natty-armv7/include/NattyProtoClient.h $UNI_BUILD_ROOT/build/universal/
 }
 
 #----------
