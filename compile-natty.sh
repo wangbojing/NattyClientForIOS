@@ -65,13 +65,13 @@ echo_archs() {
     echo "===================="
     echo "FF_ALL_ARCHS = $FF_ALL_ARCHS"
 }
-
+#$LIPO_FLAGS $UNI_BUILD_ROOT/build/natty-$ARCH/output/lib/$LIB_FILE
 do_lipo () {
     LIB_FILE=$1
     LIPO_FLAGS=
     for ARCH in $FF_ALL_ARCHS
     do
-        LIPO_FLAGS="$LIPO_FLAGS $UNI_BUILD_ROOT/build/natty-$ARCH/output/lib/$LIB_FILE"
+        LIPO_FLAGS="$LIPO_FLAGS $UNI_BUILD_ROOT/natty-$ARCH/output/lib/$LIB_FILE"
     done
 
     xcrun lipo -create $LIPO_FLAGS -output $UNI_BUILD_ROOT/build/universal/lib/$LIB_FILE
