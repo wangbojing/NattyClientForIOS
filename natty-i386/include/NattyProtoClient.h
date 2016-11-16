@@ -64,6 +64,7 @@ typedef void (*PROXY_HANDLE_CLIENT)(DEVID id, int len);
 
 int ntySendDataPacket(DEVID toId, U8 *data, int length);
 int ntySendMassDataPacket(U8 *data, int length);
+int ntySendEfencePacket(C_DEVID toId, U8 *data, int length);
 
 int ntyStartupClient(void);
 void ntyLogoutClient(void);
