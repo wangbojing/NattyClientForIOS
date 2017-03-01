@@ -6,7 +6,7 @@
  *  This software is protected by Copyright and the information contained
  *  herein is confidential. The software may not be copied and the information
  *  contained herein may not be used or disclosed except with the written
- *  permission of NALEX Inc. (C) 2016
+ *  permission of Author. (C) 2016
  * 
  *
  
@@ -43,40 +43,57 @@
 
 
 
+#ifndef __NATTY_VECTOR_H__
+#define __NATTY_VECTOR_H__
 
-#ifndef __NTY_UTILS_H__
-#define __NTY_UTILS_H__
+#include <sys/queue.h>
+#include <string.h>
+#include <stdlib.h>
 
-#include "NattyLetter.h"
 #include "NattyAbstractClass.h"
 
+#define NTY_VECTOR_MAX_COUNT		4096
 
-typedef struct tm TimeStamp;
+typedef int NVECTOR_CB(void *self, void *arg);
 
-void ntyDisplay(void);
+typedef struct nKnot {
+	LIST_ENTRY(nKnot) entries;
+	void *data;
+	int len;
+} NKnot;
 
-
-void ntyFree(void *p);
-void *ntyMalloc(size_t size);
-void *ntyJeMalloc(size_t size);
-
-
-U32 ntyKMP(const char *text,const U32 text_length, const char *pattern,const U32 pattern_length, U32 *matches) ;
-TimeStamp* ntyGetSystemTime(void);
-
-U16 ntyU8ArrayToU16(U8 *buf);
-U32 ntyU8ArrayToU32(U8 *buf);
-void ntyU8ArrayToU64(U8 *buf, C_DEVID *id);
-void ntyTimeCheckStamp(U8 *buf);
+typedef struct nVector {
+	const void *_;
+	LIST_HEAD(vectorheader, nKnot) header;
+	int num;
+	int max_num;	
+} NVector;
 
 
-int ntySeparation(const U8 ch, const U8 *sequence, int length, U8 ***pChTable, int *Count); 
-void ntyFreeTable(unsigned char ***table, int count);
+typedef struct nVectorHandle {
+	size_t size;
+	void* (*ctor)(void *_self, va_list *params);
+	void* (*dtor)(void *_self);
+	void* (*add)(void *_self, void *data, int len);
+	int (*del)(void *_self, void *timer);
+	void (*iter)(void *_self, NVECTOR_CB *cb, void *arg);
+} NVectorHandle;
 
-char ntyIsAvailableNum(char *phnum);
-int ntyCharToWchar(U8 *src, int length, wchar_t *dest);
-TIMESTAMP ntyTimeStampGenrator(void);
+
+void* ntyVectorCreator(void);
+void* ntyVectorDestory(void *self);
+void* ntyVectorInsert(void *self, void *data, int len);
+int ntyVectorDelete(void *self, void *data);
+void ntyVectorIterator(void *self, NVECTOR_CB *cb, void *arg);
+
+
+void *ntyVectorGetNodeList(void *self, int *num);
+
+
+
+
 
 
 #endif
+
 

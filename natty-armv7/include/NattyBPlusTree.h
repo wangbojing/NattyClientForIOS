@@ -6,7 +6,7 @@
  *  This software is protected by Copyright and the information contained
  *  herein is confidential. The software may not be copied and the information
  *  contained herein may not be used or disclosed except with the written
- *  permission of NALEX Inc. (C) 2016
+ *  permission of Author. (C) 2016
  * 
  *
  
@@ -42,41 +42,81 @@
  */
 
 
+#ifndef __NATTY_BPLUS_TREE_H__
+#define __NATTY_BPLUS_TREE_H__
 
 
-#ifndef __NTY_UTILS_H__
-#define __NTY_UTILS_H__
-
-#include "NattyLetter.h"
 #include "NattyAbstractClass.h"
+#include "NattyResult.h"
+#include "NattyTimer.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#ifndef bool
+#define bool 	char
+#endif
+
+#define false 	0
+#define true 	1
 
 
-typedef struct tm TimeStamp;
+#define DEFAULT_ORDER			7
+#define NTY_BPLUSTREE_ORDER		DEFAULT_ORDER
 
-void ntyDisplay(void);
-
-
-void ntyFree(void *p);
-void *ntyMalloc(size_t size);
-void *ntyJeMalloc(size_t size);
+typedef unsigned long long NTY_ID;
 
 
-U32 ntyKMP(const char *text,const U32 text_length, const char *pattern,const U32 pattern_length, U32 *matches) ;
-TimeStamp* ntyGetSystemTime(void);
+typedef struct _BPNode {
+	void **pointers;
+	NTY_ID *keys;
+	struct _BPNode *parent;
+	bool isLeaf;
+	int nKeys;
+	struct _BPNode *next;
+} BPNode;
 
-U16 ntyU8ArrayToU16(U8 *buf);
-U32 ntyU8ArrayToU32(U8 *buf);
-void ntyU8ArrayToU64(U8 *buf, C_DEVID *id);
-void ntyTimeCheckStamp(U8 *buf);
+typedef BPNode		NBPNode;
+typedef void*	RECORDTYPE;
+
+typedef struct _Record {
+	RECORDTYPE value;
+} NRecord;
+
+typedef struct _BPTreeHeap {
+	const void *_;
+	NBPNode *root;
+	int count;
+} BPTreeHeap;
+
+typedef struct _BPTreeHeapHandle {
+	size_t size;
+	void* (*ctor)(void *_self, va_list *params);
+	void* (*dtor)(void *_self);
+	int (*insert)(void *_self, NTY_ID key, RECORDTYPE value);
+	int (*delete)(void *_self, NTY_ID key);
+	int (*update)(void *_self, NTY_ID key, RECORDTYPE value, size_t size);
+	void* (*select)(void *_self, NTY_ID key);
+} BPTreeHeapHandle;
+
+typedef BPTreeHeap NBHeap;
+typedef BPTreeHeapHandle NBHeapHandle;
 
 
-int ntySeparation(const U8 ch, const U8 *sequence, int length, U8 ***pChTable, int *Count); 
-void ntyFreeTable(unsigned char ***table, int count);
+void* ntyBHeapInstance(void);
+void ntyBHeaRelease(void *self);
+int ntyBHeapInsert(void *self, NTY_ID key, RECORDTYPE value);
+int ntyBHeapDelete(void *self, NTY_ID key);
+void* ntyBHeapSelect(void *self, NTY_ID key);
+int ntyBHeapUpdate(void *self, NTY_ID key, RECORDTYPE value, size_t size);
 
-char ntyIsAvailableNum(char *phnum);
-int ntyCharToWchar(U8 *src, int length, wchar_t *dest);
-TIMESTAMP ntyTimeStampGenrator(void);
+
+
+
+
+
 
 
 #endif
+
 

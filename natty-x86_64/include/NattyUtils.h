@@ -50,10 +50,6 @@
 #include "NattyLetter.h"
 #include "NattyAbstractClass.h"
 
-#define JEMALLOC_NO_DEMANGLE 1
-#define JEMALLOC_NO_RENAME	 1
-#include <jemalloc/jemalloc.h>
-
 
 typedef struct tm TimeStamp;
 

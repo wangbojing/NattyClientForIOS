@@ -51,7 +51,6 @@
 #include "NattyAbstractClass.h"
 
 
-
 typedef struct tm TimeStamp;
 
 void ntyDisplay(void);

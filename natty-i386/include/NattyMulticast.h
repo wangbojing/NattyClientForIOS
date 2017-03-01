@@ -6,7 +6,7 @@
  *  This software is protected by Copyright and the information contained
  *  herein is confidential. The software may not be copied and the information
  *  contained herein may not be used or disclosed except with the written
- *  permission of NALEX Inc. (C) 2016
+ *  permission of Author. (C) 2016
  * 
  *
  
@@ -42,41 +42,57 @@
  */
 
 
+#ifndef __NATTY_MULTICAST_H__
+#define __NATTY_MULTICAST_H__
 
-
-#ifndef __NTY_UTILS_H__
-#define __NTY_UTILS_H__
-
-#include "NattyLetter.h"
 #include "NattyAbstractClass.h"
+#include "NattyUdpServer.h"
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <netdb.h>
+#include <errno.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <poll.h>
 
 
-typedef struct tm TimeStamp;
-
-void ntyDisplay(void);
-
-
-void ntyFree(void *p);
-void *ntyMalloc(size_t size);
-void *ntyJeMalloc(size_t size);
+#define NTY_MULTICAST_ADDRESS		"224.0.243.12"
+#define NYT_MULTICAST_PORT			8882
 
 
-U32 ntyKMP(const char *text,const U32 text_length, const char *pattern,const U32 pattern_length, U32 *matches) ;
-TimeStamp* ntyGetSystemTime(void);
+typedef struct _MulticastServer {
+	const void *_;
+	int sockfd;
+	struct sockaddr_in addr;
+	struct ip_mreq mreq;
+} MulticastServer;
 
-U16 ntyU8ArrayToU16(U8 *buf);
-U32 ntyU8ArrayToU32(U8 *buf);
-void ntyU8ArrayToU64(U8 *buf, C_DEVID *id);
-void ntyTimeCheckStamp(U8 *buf);
+
+typedef struct _MulticastServerHandle {
+	size_t size;
+	void* (*ctor)(void *_self, va_list *params);
+	void* (*dtor)(void *_self);
+	int (*process)(const void *_self);
+	int (*send)(const void *_self, U8 *data, int length);
+} MulticastServerHandle;
 
 
-int ntySeparation(const U8 ch, const U8 *sequence, int length, U8 ***pChTable, int *Count); 
-void ntyFreeTable(unsigned char ***table, int count);
+void* ntyMulticastServerInstance(void);
+int ntyMulticastSend(U8 *data, int length);
+int ntyMulticastServerRun(const void *arg);
 
-char ntyIsAvailableNum(char *phnum);
-int ntyCharToWchar(U8 *src, int length, wchar_t *dest);
-TIMESTAMP ntyTimeStampGenrator(void);
 
 
 #endif
+
+
+
+
+
+
 

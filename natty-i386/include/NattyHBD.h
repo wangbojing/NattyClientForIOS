@@ -6,7 +6,7 @@
  *  This software is protected by Copyright and the information contained
  *  herein is confidential. The software may not be copied and the information
  *  contained herein may not be used or disclosed except with the written
- *  permission of NALEX Inc. (C) 2016
+ *  permission of Author. (C) 2016
  * 
  *
  
@@ -41,42 +41,35 @@
  *
  */
 
+#ifndef __NATTY_HEARTBEAT_DETECT_H__
+#define __NATTY_HEARTBEAT_DETECT_H__
 
 
-
-#ifndef __NTY_UTILS_H__
-#define __NTY_UTILS_H__
-
-#include "NattyLetter.h"
-#include "NattyAbstractClass.h"
-
-
-typedef struct tm TimeStamp;
-
-void ntyDisplay(void);
+#include "NattyTcpServer.h"
+#include "NattyConfig.h"
+#include "NattyRBTree.h"
+#include "NattyFilter.h"
+#include "NattySession.h"
+#include "NattyTimer.h"
+#include "NattyResult.h"
 
 
-void ntyFree(void *p);
-void *ntyMalloc(size_t size);
-void *ntyJeMalloc(size_t size);
+#define NATTY_HEARTBEAT_DURATION		(5*60)
+#define NATTY_HEARTBEAT_RATIO			6/5
+#define NATTY_HEARTBEAT_THRESHOLD		(NATTY_HEARTBEAT_DURATION*NATTY_HEARTBEAT_RATIO)
 
+#define NATTY_DURATION_EVENT			(2*60)
 
-U32 ntyKMP(const char *text,const U32 text_length, const char *pattern,const U32 pattern_length, U32 *matches) ;
-TimeStamp* ntyGetSystemTime(void);
-
-U16 ntyU8ArrayToU16(U8 *buf);
-U32 ntyU8ArrayToU32(U8 *buf);
-void ntyU8ArrayToU64(U8 *buf, C_DEVID *id);
-void ntyTimeCheckStamp(U8 *buf);
-
-
-int ntySeparation(const U8 ch, const U8 *sequence, int length, U8 ***pChTable, int *Count); 
-void ntyFreeTable(unsigned char ***table, int count);
-
-char ntyIsAvailableNum(char *phnum);
-int ntyCharToWchar(U8 *src, int length, wchar_t *dest);
-TIMESTAMP ntyTimeStampGenrator(void);
+#if 0
+void ntyHeartBeatDetectTraversal(void *mainloop);
+#else
+int ntyCheckOnlineAlarmNotify(NITIMER_ID id, void *arg, int len);
 
 
 #endif
+
+#endif
+
+
+
 
