@@ -74,6 +74,9 @@ typedef struct _WorkQueue {
 	Job *waiting_jobs;
 	pthread_mutex_t jobs_mutex;
 	pthread_cond_t jobs_cond;
+#if 1
+	int counter;
+#endif
 } WorkQueue;
 
 typedef struct _ThreadPool {
@@ -88,9 +91,20 @@ typedef struct _ThreadPoolOpera {
 	void (*addJob)(void *_self, void *task);
 } ThreadPoolOpera;
 
+
+void* ntyThreadPoolCtor(void *_self, va_list *params);
+void* ntyThreadPoolDtor(void *_self);
+void ntyThreadPoolAddJob(void *_self, void *task);
+
+
+
+
+
 void *ntyThreadPoolInstance(void);
 void ntyThreadPoolRelease(void);
 int ntyThreadPoolPush(void *self, void *task);
+
+void ntyThreadPoolInit(void);
 
 
 

@@ -48,6 +48,8 @@
 #ifndef __NATTY_RBTREE_H__
 #define __NATTY_RBTREE_H__
 
+#include <pthread.h>
+
 #include "NattyAbstractClass.h"
 
 #define RED		1
@@ -63,11 +65,16 @@ typedef struct _RBTreeNode {
 	unsigned char color;
 } RBTreeNode;
 
+typedef RBTreeNode ClientTreeNode;
+
 typedef struct _RBTree {
 	const void *_;
 	RBTreeNode *root;
 	RBTreeNode *nil;
-	U16 count;
+	int count;
+	pthread_mutex_t rbtree_mutex;
+	long rbtree_delete_lock;
+	int heap_flag;
 } RBTree;
 
 typedef struct _RBTreeOpera {
@@ -81,8 +88,12 @@ typedef struct _RBTreeOpera {
 	void (*traversal)(void *_self, HANDLE_CLIENTID handle_FN);
 	void (*notify)(void *_self, C_DEVID selfId, HANDLE_NOTIFY notify_FN);
 	void (*mass)(void *_self, HANDLE_MASS handle_FN, U8 *buf, int length);
+	void (*broadcast)(void *_self, HANDLE_BROADCAST handle_FN, void *client, U8 *buf, int length);
+	void (*heartbeat)(void *_self, HANDLE_HEARTBEAT handle_FN, void *mainloop, TIMESTAMP stamp);
 } RBTreeOpera;
 
+#define TREE_DATA_FRIENDS 		0
+#define TREE_DATA_HEAP			1
 
 
 void* ntyRBTreeInstance(void);
@@ -106,8 +117,16 @@ C_DEVID* ntyFriendsTreeGetAllNodeList(const void *self);
 U16 ntyFriendsTreeGetNodeCount(const void *self);
 C_DEVID ntyFriendsTreeGetFristNodeKey(void *self);
 void ntyFriendsTreeMass(void *self, HANDLE_MASS handle_FN, U8 *buf, int length);
+void ntyRBTreeHeartBeatDetect(void *self, HANDLE_HEARTBEAT handle_FN, void *mainloop, TIMESTAMP stamp);
+void ntyFriendsTreeBroadcast(void *self, HANDLE_BROADCAST handle_FN, void *client, U8 *buf, int length);
 
 
+void* ntyMapInstance(void);
+int ntyMapInsert(void *self, C_DEVID key, void *value);
+void* ntyMapSearch(void *self, C_DEVID key);
+int ntyMapDelete(void *self, C_DEVID key);
+int ntyMapUpdate(void *self, C_DEVID key, void *value);
+void ntyMapRelease(void *self);
 
 
 

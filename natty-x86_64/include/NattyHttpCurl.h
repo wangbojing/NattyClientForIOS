@@ -49,7 +49,7 @@
 #include "NattyAbstractClass.h"
 
 
-#define HTTP_QJK_BASE_URL		"http://shangshousoft.applinzi.com"
+#define HTTP_QJK_BASE_URL		"http://app.quanjiakan.com"
 #define HTTP_GAODE_BASE_URL		"http://apilocate.amap.com"
 
 
@@ -57,6 +57,7 @@ int ntyHttpMtkQuickLocation(void *arg);
 int ntyHttpGaodeWifiCellAPI(void *arg);
 int ntyHttpQJKFallen(void *arg);
 
+int ntyHttpCurlGlobalInit(void);
 
 
 

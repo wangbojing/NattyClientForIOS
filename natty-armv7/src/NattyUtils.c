@@ -48,11 +48,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <locale.h>
 
 #include "NattyUtils.h"
 #include "NattyProtocol.h"
+#include "NattyUdpServer.h"
 
-#if 0
+
 TimeStamp* ntyGetSystemTime(void) {
 	time_t timer;
 	TimeStamp *tblock;
@@ -161,7 +163,17 @@ void ntyFree(void *p) {
 void *ntyMalloc(size_t size) {
 	return malloc(size);
 }
-#endif
+
+void *ntyJeMalloc(size_t size) {
+	return malloc(size);
+}
+
+void ntyJeFree(void *p) {
+	if (p != NULL) {
+		free(p);
+	}
+}
+
 
 #if 1
 void ntyBuildNext(const char *pattern, U32 length, U32 *next) {
@@ -283,37 +295,54 @@ void ntyU8ArrayToU64(U8 *buf, C_DEVID *id) {
 #endif
 
 
+Client *ntyClientNodeCopy(Client *client) {
+	Client *pClient = (Client*)malloc(sizeof(Client));
+#if 0
+	pClient->sockfd = client->sockfd;
+	pClient->clientType = client->clientType;
+	pClient->addr.sin_addr.s_addr = client->addr.sin_addr.s_addr;
+	pClient->addr.sin_port = client->addr.sin_port;
+	pClient->ackNum = client->ackNum;
+	pClient->devId = client->devId;
+#else
+	memcpy(pClient, client, sizeof(Client));
+#endif
+	return pClient;
+}
 
 #if 1
 
 #define ITEM_SIZE		64
 
-int ntySeparation(char ch, const char *sequence, int length, char ***pChTable, int *Count) {
+
+int ntySeparation(const U8 ch, const U8 *sequence, int length, U8 ***pChTable, int *Count) {
 	int i = 0, j = 0;
 	int len = length;
-	char ChArray[ITEM_SIZE] = {0};
-	char **pTable = *pChTable;
+	U8 ChArray[ITEM_SIZE] = {0};
+	U8 **pTable = *pChTable;
 	
 	*Count = 0;
 
 	for (i = 0;i < len;i ++) {
 		if (sequence[i] == ch) {
-			pTable[*Count] = (char*)malloc((j+1) * sizeof(char));
+			
+			pTable[*Count] = (U8*)malloc((j+1) * sizeof(U8));
 			memcpy(pTable[*Count], ChArray, j+1);
 			(*Count) ++;
 
 			//OslMfree(pTable);
 			//pTable = (char**)OslMalloc((*Count+1) * sizeof(char**));
-			pTable = (char**)realloc(pTable, (*Count+1) * sizeof(char**));
+			pTable = (U8**)realloc(pTable, (*Count+1) * sizeof(U8**));
 			j = 0;
 			memset(ChArray, 0, ITEM_SIZE);
 
 			continue;
 		} 
+		if (j >= ITEM_SIZE) return -1;
 		ChArray[j++] = sequence[i];
 	}
 	
-	pTable[*Count] = (char*)malloc((j+1) * sizeof(char));
+	pTable[*Count] = (char*)malloc((j+1) * sizeof(U8));
 	memcpy(pTable[*Count], ChArray, j+1);
 	(*Count) ++;
 	
@@ -353,6 +382,41 @@ char ntyIsAvailableNum(char *phnum) {
 		phnum++;
 	}
 	return 1;
+}
+
+int ntyCharToWchar(U8 *src, int length, wchar_t *dest) {
+	int w_size = 0;
+
+	setlocale(LC_ALL, "zh_CN.utf8");
+	w_size = mbstowcs(NULL, src, 0) + 1;
+
+	w_size = mbstowcs(dest, src, length);
+
+	return w_size;
+}
+
+TIMESTAMP ntyTimeStampGenrator(void) {
+	static TIMESTAMP lTimeStamp = 0;
+	static long timeStampMutex = 0;
+
+	if(0 == cmpxchg(&timeStampMutex, 0, 1, WORD_WIDTH)) {
+		lTimeStamp = time(NULL);
+		timeStampMutex = 0;
+	}
+
+	return lTimeStamp;
+}
+
+int ntyWriteDat(const char *filename, const char *data, int len) {
+	FILE *pAMRFile = fopen(filename, "w+b");
+	int size = 0;
+
+	size = fwrite(data, 1, len, pAMRFile);
+	fflush(pAMRFile);
+
+	fclose(pAMRFile);
+
+	return size;
 }
 
 

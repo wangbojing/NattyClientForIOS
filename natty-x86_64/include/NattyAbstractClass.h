@@ -76,17 +76,36 @@
 #define ntydbg(format, ...) 
 #endif
 
+#define ASSERT(x)			assert(x)
 
-typedef long long U64;
+typedef unsigned long long U64;
+typedef signed long long S64;
 typedef unsigned int U32;
 typedef unsigned short U16;
 typedef unsigned char U8;
 typedef unsigned long long C_DEVID;
+typedef long TIMESTAMP;
+//typedef C_DEVID NTY_ID;
+
+typedef   signed char   int8_t;
+typedef unsigned char  uint8_t;
+typedef   signed short  int16_t;
+typedef unsigned short uint16_t;
+typedef   signed int    int32_t;
+typedef unsigned int   uint32_t;
 typedef int (*HANDLE_CLIENTID)(void* client, C_DEVID id);
 typedef int (*HANDLE_NOTIFY)(C_DEVID from, C_DEVID to);
 typedef int (*HANDLE_MASS)(C_DEVID to, U8 *data, int length);
+typedef int (*HANDLE_BROADCAST)(void* client, C_DEVID to, U8 *data, int length);
+typedef int (*HANDLE_HEARTBEAT)(void* node, void *mainloop, TIMESTAMP stamp);
 
-
+/*
+ * AbstractClass
+ * three layer to implement Object Oriented by C
+ * 1. implement layer	: 
+ * 2. Abstract layer: xxHandle Class defined
+ * 3. interface layer: 
+ */
 typedef struct {
 	size_t size;
 	void* (*ctor)(void *_self, va_list *params);

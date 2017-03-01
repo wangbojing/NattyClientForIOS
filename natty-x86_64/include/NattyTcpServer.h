@@ -53,6 +53,7 @@
 #define NATTY_SOCKET_READ_TIMEOUT		10
 #define NATTY_SOCKET_WRITE_TIMEOUT		10
 
+
 typedef Client TcpClient;
 typedef Server TcpServer;
 typedef ServerHandle TcpServerHandle; 
@@ -69,6 +70,7 @@ typedef struct _TcpClient {
 
 void* ntyTcpServerInstance(void);
 int ntyTcpServerRun(const void *arg);
+void *ntyTcpServerGetMainloop(void);
 
 
 

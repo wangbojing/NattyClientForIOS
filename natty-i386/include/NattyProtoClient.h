@@ -59,15 +59,23 @@ typedef unsigned long long DEVID;
 typedef void (*PROXY_CALLBACK_CLINET)(int len);
 typedef void (*PROXY_HANDLE_CLIENT)(DEVID id, int len);
 
+typedef void (*NTY_STATUS_CALLBACK)(int status);
+typedef void (*NTY_PARAM_CALLBACK)(U8 *arg, int length);
+typedef void (*NTY_RETURN_CALLBACK)(DEVID fromId, U8 *arg, int length);
+
+
 #define CLIENT_BUFFER_SIZE		1024
 #define NTY_BIGBUFFER_SIZE		30*1024
+#define NTY_TIMER_SIZE			32
+
+#ifndef ntydbg
+#define ntydbg(format, ...) 		fprintf(stdout, format, ##__VA_ARGS__)
+#endif
 
 int ntySendDataPacket(DEVID toId, U8 *data, int length);
 int ntySendMassDataPacket(U8 *data, int length);
-int ntySendEfencePacket(DEVID toId, U8 *data, int length);
 
-int ntyStartupClient(void);
-void ntyLogoutClient(void);
+void* ntyStartupClient(int *status);
 void ntyShutdownClient(void);
 
 
@@ -75,33 +83,57 @@ void ntySetSendSuccessCallback(PROXY_CALLBACK_CLINET cb);
 void ntySetSendFailedCallback(PROXY_CALLBACK_CLINET cb);
 void ntySetProxyCallback(PROXY_CALLBACK_CLINET cb);
 U8* ntyGetRecvBuffer(void);
-DEVID ntyGetFromDevID(void);
-void ntySetProxyDisconnect(PROXY_CALLBACK_CLINET cb);
-void ntySetProxyReconnect(PROXY_CALLBACK_CLINET cb);
-
-
-void ntySetPacketRecv(PROXY_CALLBACK_CLINET cb);
-void ntySetPacketResult(PROXY_CALLBACK_CLINET cb);
-
-
 void ntySetDevId(DEVID id);
 int ntyGetRecvBufferSize(void);
 void ntyReleaseNetwork(void);
 int ntyGetNetworkStatus(void);
 void ntySetBindResult(PROXY_CALLBACK_CLINET cb);
 void ntySetUnBindResult(PROXY_CALLBACK_CLINET cb);
+void ntySetProxyDisconnect(PROXY_CALLBACK_CLINET cb);
+void ntySetProxyReconnect(PROXY_CALLBACK_CLINET cb);
 
-void ntyBindClient(DEVID did);
-void ntyUnBindClient(DEVID did);
+void ntySetPacketRecv(PROXY_CALLBACK_CLINET cb);
+void ntySetPacketSuccess(PROXY_CALLBACK_CLINET cb);
 
-DEVID* ntyGetFriendsList(int *Count);
-void ntyReleaseFriendsList(DEVID **list);
+
+void ntySetCommonBroadCastResult(NTY_RETURN_CALLBACK cb);
+void ntySetLocationBroadCastResult(NTY_RETURN_CALLBACK cb);
+void ntySetVoiceBroadCastResult(NTY_RETURN_CALLBACK cb);
+
+void ntySetDataResult(NTY_STATUS_CALLBACK cb);
+void ntySetDataRoute(NTY_RETURN_CALLBACK cb);
+
+void ntySetWeatherPushResult(NTY_PARAM_CALLBACK cb);
+void ntySetLocationPushResult(NTY_PARAM_CALLBACK cb);
+
+void ntySetOfflineMsgAckResult(NTY_PARAM_CALLBACK cb);
+void ntySetVoiceDataAckResult(NTY_STATUS_CALLBACK cb);
+void ntySetCommonReqResult(NTY_RETURN_CALLBACK cb);
+
+void ntySetICCIDAckResult(NTY_PARAM_CALLBACK cb);
+void ntySetTimeAckResult(NTY_PARAM_CALLBACK cb);
+
+void ntySetLogoutAckResult(NTY_STATUS_CALLBACK cb);
+void ntySetHeartBeatAckResult(NTY_STATUS_CALLBACK cb);
+void ntySetLoginAckResult(NTY_PARAM_CALLBACK cb);
+
+
+int ntyBindClient(DEVID did);
+int ntyUnBindClient(DEVID did);
+
+int ntyVoiceReqClient(U8 *json, U16 length);
+int ntyVoiceAckClient(U8 *json, U16 length);
+int ntyVoiceDataReqClient(DEVID gId, U8 *data, int length);
+
+int ntyCommonReqClient(DEVID gId, U8 *json, U16 length);
+int ntyCommonAckClient(U8 *json, U16 length);
+int ntyDataRouteClient(DEVID toId, U8 *json, U16 length);
+
+void ntyProtoClientSetToken(void *_self, U8 *tokens, int length);
 
 U8 *ntyGetRecvBigBuffer(void);
 U8 *ntyGetSendBigBuffer(void);
 int ntyGetRecvBigLength(void);
-
-int ntySendBigBuffer(U8 *buffer, int length, DEVID toId);
 
 
 #endif

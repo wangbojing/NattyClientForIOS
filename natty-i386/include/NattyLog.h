@@ -52,12 +52,12 @@
 typedef zlog_category_t nLogCategory;
 
 
-#define NATTY_LOG_CONF		"./nlog.conf"
+#define NATTY_LOG_CONF		"/usr/local/Natty/nlog.conf"
 
 #define NATTY_LOG_OUTSTREAM	nCategory
 #define NATTY_LOG_CATEGORY	"nCategory"
 
-#define NATTY_LOG_BUFFER_LENGTH			256
+#define NATTY_LOG_BUFFER_LENGTH			1024
 
 //#define nLogInfo(format, ...)	zlog_info(NATTY_LOG_OUTSTREAM, format, ##__VA_ARGS__)
 
@@ -71,7 +71,7 @@ typedef struct _LOGHANDLE {
 	size_t size;
 	void* (*ctor)(void *_self, va_list *params);
 	void* (*dtor)(void *_self);
-	void (*logt)(void *_self, const char *format, va_list *params);
+	void (*logt)(void *self, const char *format);
 } LogHandle;
 
 #endif

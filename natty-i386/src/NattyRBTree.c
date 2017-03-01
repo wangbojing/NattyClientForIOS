@@ -44,8 +44,13 @@
 
 
 #include <string.h>
+#include <ev.h>
 
 #include "NattyRBTree.h"
+#include "NattyUdpServer.h"
+#include "NattyConfig.h"
+
+//static pthread_mutex_t rbtree_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 void ntyRBTreeLeftRotate(RBTree *T, RBTreeNode *x) {
@@ -132,7 +137,7 @@ void ntyRBTreeInsertFixup(RBTree *T, RBTreeNode *z) {
 	T->root->color = BLACK;
 }
 
-void NattyRBTreeInsert(RBTree *T, RBTreeNode *z) {
+void ntyRBTreeInsert(RBTree *T, RBTreeNode *z) {
 	RBTreeNode *y = T->nil;
 	RBTreeNode *x = T->root;
 
@@ -282,13 +287,39 @@ RBTreeNode* ntyRBTreeDelete(RBTree *T, RBTreeNode *z) {
 	}
 		
 	if (y != z) {
+#if ENABLE_RBTREE_MUTEX
+		pthread_mutex_lock(&T->rbtree_mutex);
 		z->key = y->key;
+		#if 0
 		z->value = y->value;
+		#else
+		Client *pcz = z->value;
+		Client *pcy = y->value;
+		
+		//memcpy(pcz->friends, pcy->friends, sizeof(RBTree));
+		pcz->friends = pcy->friends;
+		//pcz->watcher = pcy->watcher;
+		//memcpy(pcz->watcher, pcy->watcher, sizeof(struct ev_io));
+		memcpy(z->value, y->value, sizeof(Client));
+		#endif
+		pthread_mutex_unlock(&T->rbtree_mutex);
+#else
+		z->key = y->key;
+		//z->value = y->value;
+		memcpy(z->value, y->value, sizeof(Client));
+#endif
 	}
-
+#if ENABLE_RBTREE_MUTEX
+	pthread_mutex_lock(&T->rbtree_mutex);
 	if (y->color == BLACK) {
 		ntyRBTreeDeleteFixup(T, x);
 	}
+	pthread_mutex_unlock(&T->rbtree_mutex);
+#else
+	if (y->color == BLACK) {
+		ntyRBTreeDeleteFixup(T, x);
+	}
+#endif
 	return y;
 }
 
@@ -314,7 +345,18 @@ void* ntyRBTreeOperaCtor(void *_self, va_list *params) {
 	self->nil->color = BLACK;
 	self->root = self->nil;
 	self->count = 0;
+	self->rbtree_delete_lock = 0;
 
+	int arg = va_arg(params, int);
+	if (arg == 1) {
+		self->heap_flag = 1; //data heap;
+	} else {
+		self->heap_flag = 0; //friend heap
+	}
+
+	pthread_mutex_t blank_mutex = PTHREAD_MUTEX_INITIALIZER;
+	memcpy(&self->rbtree_mutex, &blank_mutex, sizeof(blank_mutex));
+		
 	return self;
 }
 
@@ -346,8 +388,19 @@ int ntyRBTreeOperaInsert(void *_self, C_DEVID key, void *value) {
 		node = (RBTreeNode*)malloc(sizeof(RBTreeNode));
 		node->key = key;
 		node->value = value;
-		NattyRBTreeInsert(self, node);
+#if ENABLE_RBTREE_MUTEX		
+		if(0 == cmpxchg(&self->rbtree_delete_lock, 0, 1, WORD_WIDTH)) {
+			ntyRBTreeInsert(self, node);
+			self->count ++;
+			self->rbtree_delete_lock = 0;
+		} else {
+			free(node);
+			return 2;
+		}		
+#else
+		ntyRBTreeInsert(self, node);
 		self->count ++;
+#endif
 		return 0;
 	}
 	return 1; //exist
@@ -367,11 +420,43 @@ int ntyRBTreeOperaDelete(void *_self, C_DEVID key) {
 	RBTree *self = _self;
 
 	RBTreeNode *node = ntyRBTreeSearch(self , key);
-	if (node == self->nil) return 1;
+	if (node == self->nil) return 3;
+#if 1 //Release Friend list
+	if (node->value != NULL) {
+#if 1
+		if(0 == cmpxchg(&self->rbtree_delete_lock, 0, 1, WORD_WIDTH)) {
+			Client *client = node->value;
+			if (client->friends != NULL) {
+				client->friends = ntyRBTreeOperaDtor(client->friends);
+				client->friends = NULL;
+			}
+			
+			node = ntyRBTreeDelete(self, node);
+#if 1
+			self->count --;
+#endif
+#if 0
+			free(node->value);
+#endif
+			free(node);
 
-	node = ntyRBTreeDelete(self, node);
+			self->rbtree_delete_lock = 0;
+		} else {
+			ntydbg(" ntyRBTreeOperaDelete --> have delete node\n"); 
+			return 2;
+		}
+#endif
+#if 0
+		free(node->value);
+#endif
+	}
+#endif
+#if 0
 	free(node);
+#endif
+#if 0 //Update Assertion `(list-friends) == count' failed. 
 	self->count --;
+#endif
 
 	return 0;
 }
@@ -419,9 +504,8 @@ static void ntyInOrderTraversalForList(const RBTree *T, RBTreeNode *node, C_DEVI
 }
 
 static void ntyInOrderMass(RBTree *T, RBTreeNode *node, HANDLE_MASS handle_FN, U8 *buf, int length) {
-	LOG("ntyInOrderMass");
 	if (node != T->nil) {
-		LOG("ntyInOrderMass not null");
+		
 		ntyInOrderMass(T, node->left, handle_FN, buf, length);		
 		handle_FN(node->key, buf, length);
 		ntyInOrderMass(T, node->right, handle_FN, buf, length);
@@ -429,9 +513,38 @@ static void ntyInOrderMass(RBTree *T, RBTreeNode *node, HANDLE_MASS handle_FN, U
 	return ;
 }
 
+static void ntyInOrderBroadcast(RBTree *T, RBTreeNode *node, HANDLE_BROADCAST handle_FN, void *client, U8 *buf, int length) {
+	if (node != T->nil) {
+		Client *pClient = client;
+		//ntylog(" ntyInOrderBroadcast fromId \n");
+		ntyInOrderBroadcast(T, node->left, handle_FN, client, buf, length);
+		//ntylog(" ntyInOrderBroadcast :%lld, fromId:%lld, buffer:%s, length:%d\n", node->key, pClient->devId, buf, length);
+		handle_FN(client, node->key, buf, length);
+		//ntylog(" ntyInOrderBroadcast --> handle_FN :%lld, buffer:%s, length:%d\n", node->key, buf, length);
+		ntyInOrderBroadcast(T, node->right, handle_FN, client, buf, length);
+	}
+	return ;
+}
+
+static void ntyInOrderHeartBeat(RBTree *T, RBTreeNode *node, HANDLE_HEARTBEAT handle_FN, void *mainloop, TIMESTAMP stamp) {
+	if (node != T->nil) {		
+		ntyInOrderHeartBeat(T, node->left, handle_FN, mainloop, stamp);
+		//ntylog(" ntyInOrderHeartBeat :%lld, stamp:%ld\n", node->key, stamp);
+#if 0		
+		handle_FN(node->value, mainloop, stamp);
+#else
+		handle_FN(node, mainloop, stamp);
+#endif
+		ntyInOrderHeartBeat(T, node->right, handle_FN, mainloop, stamp);
+	}
+	return ;
+}
+
+
+
 static void ntyPreOrderTraversal(RBTree *T, RBTreeNode *node) {
 	if (node != T->nil) {
-		LOG(" %lld ", node->key);
+		//ntylog(" %lld ", node->key);
 		ntyPreOrderTraversal(T, node->left);
 		ntyPreOrderTraversal(T, node->right);
 	}
@@ -452,7 +565,7 @@ static void ntyPosOrderTraversal(RBTree *T, RBTreeNode *node) {
 	if (node != T->nil) {
 		ntyPosOrderTraversal(T, node->left);
 		ntyPosOrderTraversal(T, node->right);
-		LOG(" %lld ", node->key);
+		//ntylog(" %lld ", node->key);
 	}
 	return ;
 }
@@ -462,7 +575,7 @@ static int ntyPrintTreeByLevel(RBTree *T, RBTreeNode *node, int level) {
 		return 0;
 	}
 	if (0 == level) {
-		LOG(" %lld color:%d  %s\n", node->key, node->color, (char*)node->value);
+		//ntylog(" %lld color:%d  %s\n", node->key, node->color, (char*)node->value);
 		return 1;
 	}
 
@@ -497,6 +610,21 @@ void ntyRBTreeOperaMass(void *_self, HANDLE_MASS handle_FN, U8 *buf, int length)
 	return ntyInOrderMass(self, self->root, handle_FN, buf, length);
 }
 
+void ntyRBTreeOperaHeartBeat(void *_self, HANDLE_HEARTBEAT handle_FN, void *mainloop, TIMESTAMP stamp) {
+	RBTree *self = _self;
+
+	//ntylog("ntyRBTreeOperaHeartBeat\n");
+	return ntyInOrderHeartBeat(self, self->root, handle_FN, mainloop, stamp);
+}
+
+
+void ntyRBTreeOperaBroadcast(void *_self, HANDLE_BROADCAST handle_FN, void *client,  U8 *buf, int length) {
+	RBTree *self = _self;
+
+	//ntylog("ntyRBTreeOperaBroadcast\n");
+	return ntyInOrderBroadcast(self, self->root, handle_FN, client, buf, length);
+}
+
 
 static const RBTreeOpera ntyRBTreeOpera = {
 	sizeof(RBTree),
@@ -509,6 +637,8 @@ static const RBTreeOpera ntyRBTreeOpera = {
 	ntyRBTreeOperaTraversal,
 	ntyRBTreeOperaNotify,
 	ntyRBTreeOperaMass,
+	ntyRBTreeOperaBroadcast,
+	ntyRBTreeOperaHeartBeat,
 };
 
 const void *pNtyRBTreeOpera = &ntyRBTreeOpera;
@@ -519,8 +649,11 @@ static void *pRBTree = NULL; //Singleton
 
 void* ntyRBTreeInstance(void) {
 	if (pRBTree == NULL) {
-		pRBTree = New(pNtyRBTreeOpera);
-
+		int arg = 1;
+		void *pTree = New(pNtyRBTreeOpera, arg);
+		if ((unsigned long)NULL != cmpxchg((void*)(&pRBTree), (unsigned long)NULL, (unsigned long)pTree, WORD_WIDTH)) {
+			Delete(pTree);
+		} 
 	}
 	return pRBTree;
 }
@@ -578,7 +711,9 @@ void ntyRBTreeRelease(void *self) {
  */
 
 void *ntyFriendsTreeInstance(void) {
-	void *pFriends = New(pNtyRBTreeOpera);
+	int arg = 0;
+
+	void *pFriends = New(pNtyRBTreeOpera, arg);
 	return pFriends;
 }
 
@@ -619,12 +754,28 @@ void ntyFriendsTreeTraversalNotify(void *self, C_DEVID selfId, HANDLE_NOTIFY not
 void ntyFriendsTreeMass(void *self, HANDLE_MASS handle_FN, U8 *buf, int length) {
 	RBTreeOpera **pRBTreeOpera = self;
 	
-	LOG("ntyFriendsTreeMass start");
 	if (self && (*pRBTreeOpera) && (*pRBTreeOpera)->mass) {
 		return (*pRBTreeOpera)->mass(self, handle_FN, buf, length);
 	}
-	LOG("ntyFriendsTreeMass end");
 }
+
+void ntyFriendsTreeBroadcast(void *self, HANDLE_BROADCAST handle_FN, void *client, U8 *buf, int length) {
+	RBTreeOpera **pRBTreeOpera = self;
+	
+	if (self && (*pRBTreeOpera) && (*pRBTreeOpera)->broadcast) {
+		return (*pRBTreeOpera)->broadcast(self, handle_FN, client, buf, length);
+	}
+}
+
+void ntyRBTreeHeartBeatDetect(void *self, HANDLE_HEARTBEAT handle_FN, void *mainloop, TIMESTAMP stamp) {
+	RBTreeOpera **pRBTreeOpera = self;
+
+	if (self && (*pRBTreeOpera) && (*pRBTreeOpera)->heartbeat) {
+		return (*pRBTreeOpera)->heartbeat(self, handle_FN, mainloop, stamp);
+	}
+}
+
+
 
 
 /*
@@ -657,12 +808,22 @@ C_DEVID* ntyFriendsTreeGetAllNodeList(const void *self) {
 	//C_DEVID *list = (C_DEVID*)malloc(count*sizeof(C_DEVID));
 	C_DEVID *list = (C_DEVID*)malloc(count*sizeof(C_DEVID));
 	C_DEVID *friends = list;
-	assert(list);
+	//assert(list);
+	if (list == NULL) { 
+		ntydbg(" ntyFriendsTreeGetAllNodeList --> Malloc Error\n");
+		return NULL;
+	}
 	memset(list, 0, count*sizeof(C_DEVID));
 	
 	list = ntyPreOrderTraversalForList(tree, tree->root, list);
+#if 0
+	ntydbg(" %d, count:%d\n", list-friends, count);
+#else
+	int c = list-friends;
+	ntydbg(" %d, count:%d\n", c, count);
+#endif
 	assert((list-friends) == count);
-
+	
 	return friends;
 }
 
@@ -684,6 +845,68 @@ void* ntyFriendsTreeGetFristNode(void *self) {
 C_DEVID ntyFriendsTreeGetFristNodeKey(void *self) {
 	const RBTree *tree = self;
 	return tree->root->key;
+}
+
+
+//int nty
+
+static void *pMap = NULL;
+void* ntyMapInstance(void) {
+	if (pMap == NULL) {
+		int arg = 1;
+		void *pTree = New(pNtyRBTreeOpera, arg);
+		if ((unsigned long)NULL != cmpxchg((void*)(&pMap), (unsigned long)NULL, (unsigned long)pTree, WORD_WIDTH)) {
+			Delete(pTree);
+		} 
+	}
+	return pMap;
+}
+
+int ntyMapInsert(void *self, C_DEVID key, void *value) {
+	RBTreeOpera **pRBTreeOpera = self;
+
+	if (self && (*pRBTreeOpera) && (*pRBTreeOpera)->insert) {
+		return (*pRBTreeOpera)->insert(self, key, value);
+	}
+	return -1;
+}
+
+//return node->value : UdpClient
+void* ntyMapSearch(void *self, C_DEVID key) {
+	RBTreeOpera **pRBTreeOpera = self;
+
+	if (self && (*pRBTreeOpera) && (*pRBTreeOpera)->search) {
+		RBTreeNode* node = (*pRBTreeOpera)->search(self, key);
+		if (node != NULL) {
+			return node->value; //UdpClient
+ 		} else {
+			return NULL;
+		}
+	}
+	return NULL;
+}
+
+int ntyMapDelete(void *self, C_DEVID key) {
+	RBTreeOpera **pRBTreeOpera = self;
+
+	if (self && (*pRBTreeOpera) && (*pRBTreeOpera)->delete) {
+		return (*pRBTreeOpera)->delete(self, key);
+	}
+	return -1;
+}
+
+int ntyMapUpdate(void *self, C_DEVID key, void *value) {
+	RBTreeOpera **pRBTreeOpera = self;
+
+	if (self && (*pRBTreeOpera) && (*pRBTreeOpera)->update) {
+		return (*pRBTreeOpera)->update(self, key, value);
+	}
+	return -1;
+}
+
+
+void ntyMapRelease(void *self) {
+	return Delete(self);
 }
 
 
@@ -709,7 +932,7 @@ int main() {
 		node->key = keyArray[i];
 		node->value = NULL;
 				
-		NattyRBTreeInsert(T, node);
+		ntyRBTreeInsert(T, node);
 	}
 
 	ntylog("\n");

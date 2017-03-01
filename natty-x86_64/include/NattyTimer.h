@@ -55,62 +55,51 @@
 #include <sys/queue.h>
 
 #include <pthread.h>
+
 #include "NattyAbstractClass.h"
 
-typedef void (*HANDLE_TIMER)(int sig);
 
-typedef struct _NetworkTimer {
-	const void *_;
-	int sigNum;
-	U32 timerProcess;
-	HANDLE_TIMER timerFunc;
-	pthread_mutex_t timer_mutex;
-	pthread_cond_t timer_cond;
-} NetworkTimer;
+#define NTY_MAX_TIMER_NUM			(1<<20)
+#define NTY_CURRENT_TIMER_NUM		20
+#define NTY_TIMER_START				1
+#define NTY_TIMER_TICK				1
+#define NTY_INVALID_TIMER_ID		(-1)
 
-typedef struct _TIMEROPERA {
-	size_t size;
-	void* (*ctor)(void *_self, va_list *params);
-	void* (*dtor)(void *_self);
-	int (*start)(void *_self, HANDLE_TIMER fun);
-	int (*stop)(void *_self);
-} TimerOpera;
+typedef unsigned int NITIMER_ID;
+typedef int NFTIMER_EXPIRY_FUNC(NITIMER_ID id, void *user_data, int len);
 
-
-
-#define MAX_TIMER_NUM			1000
-#define CURRENT_TIMER_NUM		20
-#define TIMER_START				1
-#define TIMER_TICK				1
-#define INVALID_TIMER_ID		(-1)
-
-typedef int timer_id;
-typedef timer_id TimerId;
-typedef int timer_expiry(timer_id id, void *user_data, int len);
 
 /**
  * The type of the timer
  */
-struct timer {
-	LIST_ENTRY(timer) entries;	/**< list entry		*/	
+ struct ntimer {
+	LIST_ENTRY(ntimer) entries;	/**< list entry		*/	
 	
-	timer_id id;			/**< timer id		*/
+	NITIMER_ID id;			/**< timer id		*/
 
 	int interval;			/**< timer interval(second)*/
 	int elapse; 			/**< 0 -> interval 	*/
 
-	timer_expiry *cb;		/**< call if expiry 	*/
+	NFTIMER_EXPIRY_FUNC *cb;		/**< call if expiry 	*/
+#if 1
+	//user_data use for storing Client Addr
+	//
 	void *user_data;		/**< callback arg	*/
 	int len;			/**< user_data length	*/
+#else
+	unsigned long user_data;
+#endif
 
 	int enable;
 };
+
+//user_data	BPLUESNode *
 
 /**
  * The timer list
  */
 struct timer_list {
-	LIST_HEAD(listheader, timer) header;	/**< list header 	*/
+	LIST_HEAD(listheader, ntimer) header;	/**< list header 	*/
 	int num;				/**< timer entry number */
 	int max_num;				/**< max entry number	*/
 
@@ -119,31 +108,34 @@ struct timer_list {
 
 	struct itimerval ovalue;		/**< old timer value */
 	struct itimerval value;			/**< our internal timer value */
+	
+	pthread_mutex_t timer_mutex;
 };
 
 
+typedef struct ntimer NSTimer;
+typedef struct timer_list NSTimerList;
+
+typedef struct _NWTIMER {
+	const void *_;
+	NSTimerList *nContainer;
+} NWTimer;
+
+typedef struct _NWTIMERHANDLE {
+	size_t size;
+	void* (*ctor)(void *_self, va_list *params);
+	void* (*dtor)(void *_self);
+	void* (*add)(void *_self, int interval, NFTIMER_EXPIRY_FUNC *cb, void *user_data, int len);
+	int (*del)(void *_self, void *timer);
+} NWTimerHandle;
 
 
-//#define TIMER_TICK		200
-#define MS(x)		(x*1000)
-
-#define RECONNECT_TICK		60
-#define S(x)		(MS(x)*1000)
-
-void *ntyNetworkTimerInstance(void);
-void *ntyReconnectTimerInstance(void);
-
-int ntyStartTimer(void *self,  HANDLE_TIMER func);
-int ntyStopTimer(void *self);
+void* ntyTimerInstance(void);
+void ntyTimerRelease(void);
+void* ntyTimerAdd(void *self, int interval, NFTIMER_EXPIRY_FUNC *cb, void *user_data, int len);
+int ntyTimerDel(void *self, void *timer);
 
 
-int init_timer(int count);
-
-int destroy_timer(void);
-
-timer_id add_timer(int interval, timer_expiry *cb, void *user_data, int len);
-
-int del_timer(timer_id id);
 
 
 

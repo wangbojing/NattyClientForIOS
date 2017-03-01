@@ -47,10 +47,10 @@
 #define __DAVE_MQ_H__
 
 #include "NattyAbstractClass.h"
+#include "NattyConfig.h"
 
 
-
-#define DAVE_MESSAGE_LENGTH			512
+#define DAVE_MESSAGE_LENGTH			1024
 
 #define NTY_HTTP_GET_HANDLE_STRING			"GET"
 #define NTY_HTTP_POST_HANDLE_STRING			"POST"
@@ -68,10 +68,15 @@ typedef enum {
 
 typedef struct _MESSAGETAG {
 	MESSAGE_TYPE Type;
+#if ENABLE_DAVE_MSGQUEUE_MALLOC
+	U8 *Tag;
+#else
 	U8 Tag[DAVE_MESSAGE_LENGTH];
+#endif
 	int length;
 	C_DEVID fromId;
 	C_DEVID toId;
+	U8 u8LocationType;
 } MessageTag;
 
 //typedef int VALUE_TYPE;
@@ -100,10 +105,10 @@ typedef struct _DaveQueueHandle {
 } DaveQueueHandle;
 
 void *ntyDaveMqWorkerInstance(void);
-void ntyDaveMqPushWorker(void *arg) ;
 int ntyClassifyMessageType(C_DEVID fromId, C_DEVID toId, U8 *data, int length);
 
 void ntyDaveMqStart(void);
+void ntyDaveMqWorkerInit(void);
 
 
 
