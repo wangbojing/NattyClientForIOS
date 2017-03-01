@@ -182,7 +182,7 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 	proto->selfId = g_devid;
 	proto->recvLen = 0;
 	memset(proto->recvBuffer, 0, RECV_BUFFER_SIZE);
-	proto->friends = ntyVectorCreator();
+	//proto->friends = ntyVectorCreator();
 
 	ntyGenCrcTable();
 	//Setup Socket Connection
@@ -213,7 +213,7 @@ void* ntyProtoClientDtor(void *_self) {
 	//Release Socket Connection
 	ntyNetworkRelease();
 	
-	ntyVectorDestory(proto->friends);
+	//ntyVectorDestory(proto->friends);
 	proto->u8ConnectFlag = 0;
 	proto->u8RecvExitFlag = 0;
 
@@ -981,12 +981,14 @@ static int ntyReconnectCb(NITIMER_ID id, void *user_data, int len) {
 	return NTY_RESULT_SUCCESS;
 }
 
+#if 0
+
 C_DEVID* ntyGetFriendsList(int *Count) {
 	NattyProto* proto = ntyProtoInstance();
 
-	C_DEVID *list = ntyVectorGetNodeList(proto->friends, Count);
+	//C_DEVID *list = ntyVectorGetNodeList(proto->friends, Count);
 
-	return list;
+	return NULL;
 }
 
 void ntyReleaseFriendsList(C_DEVID **list) {
@@ -994,6 +996,7 @@ void ntyReleaseFriendsList(C_DEVID **list) {
 	free(pList);
 	pList = NULL;
 }
+#endif
 
 void ntyStartReconnectTimer(void) {
 	void *nTimerList = ntyTimerInstance();
