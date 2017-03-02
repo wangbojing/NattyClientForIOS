@@ -171,7 +171,7 @@ typedef struct _NATTYPROTO_OPERA {
 typedef NattyProtoOpera NattyProtoHandle;
 
 #endif
-#if 1
+#if 0
 extern DEVID g_devid;
 #endif
 
@@ -179,7 +179,7 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 	NattyProto *proto = _self;
 
 	proto->onRecvCallback = ntyRecvProc;
-	proto->selfId = g_devid;
+	//proto->selfId = g_devid;
 	proto->recvLen = 0;
 	memset(proto->recvBuffer, 0, RECV_BUFFER_SIZE);
 	//proto->friends = ntyVectorCreator();

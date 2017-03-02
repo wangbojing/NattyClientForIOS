@@ -188,8 +188,28 @@ int main() {
 	ntySetUnBindResult(ntyUnBindResult);
 	ntySetPacketRecv(ntyPacketRecv);
 	ntySetPacketSuccess(ntyPacketSuccess);
+
+	ntySetLoginAckResult(ntyLoginAckResult);
+	ntySetHeartBeatAckResult(ntyHeartBeatAckResult);
+	ntySetLogoutAckResult(ntyLogoutAckResult);
+#if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_WATCH)
+	ntySetTimeAckResult(ntyTimeAckResult);
+	ntySetICCIDAckResult(ntyICCIDAckResult);
+#endif
+	ntySetCommonReqResult(ntyCommonReqResult);
+	ntySetVoiceDataAckResult(ntyVoiceDataAckResult);
+	ntySetOfflineMsgAckResult(ntyOfflineMsgAckResult);
+	ntySetLocationPushResult(ntyLocationPushResult);
+	ntySetWeatherPushResult(ntyWeatherPushResult);
+
+	ntySetDataRoute(ntyDataRoute);
+	ntySetDataResult(ntyDataResult);
+
+	ntySetVoiceBroadCastResult(ntyVoiceBroadCastResult);
+	ntySetLocationBroadCastResult(ntyLocationBroadCastResult);
+	ntySetCommonBroadCastResult(ntyCommonBoradCastResult);
 	
-	//ntySetDevId(did);
+	ntySetDevId(g_devid);
 	
 	ntyStartupClient(&result);
 	sleep(5);
