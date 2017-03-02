@@ -635,7 +635,9 @@ int ntySendMassDataPacket(U8 *data, int length) {
 
 void ntySetSendSuccessCallback(PROXY_CALLBACK cb) {
 	NattyProto* proto = ntyProtoInstance();
-	proto->onProxySuccess = cb;
+	if (proto) {
+		proto->onProxySuccess = cb;
+	}
 }
 
 void ntySetSendFailedCallback(PROXY_CALLBACK cb) {
