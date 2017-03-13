@@ -310,7 +310,6 @@ Client *ntyClientNodeCopy(Client *client) {
 }
 #endif 
 
-
 #if 1
 
 #define ITEM_SIZE		64

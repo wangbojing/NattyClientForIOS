@@ -100,7 +100,7 @@ void ntySetCommonBroadCastResult(NTY_RETURN_CALLBACK cb);
 void ntySetLocationBroadCastResult(NTY_RETURN_CALLBACK cb);
 void ntySetVoiceBroadCastResult(NTY_RETURN_CALLBACK cb);
 
-void ntySetDataResult(NTY_STATUS_CALLBACK cb);
+void ntySetDataResult(NTY_PARAM_CALLBACK cb);
 void ntySetDataRoute(NTY_RETURN_CALLBACK cb);
 
 void ntySetWeatherPushResult(NTY_PARAM_CALLBACK cb);

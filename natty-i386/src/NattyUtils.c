@@ -308,7 +308,6 @@ Client *ntyClientNodeCopy(Client *client) {
 #endif
 	return pClient;
 }
-
 #endif 
 
 #if 1
