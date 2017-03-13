@@ -55,14 +55,15 @@
 #include <netinet/in.h>
 
 #if 0
-typedef long long U64;
+typedef unsigned long long U64;
 typedef unsigned int U32;
 typedef unsigned short U16;
 typedef unsigned char U8;
 typedef long long C_DEVID;
+//typedef long long C_DEVID;
 #endif
 
-#define SERVER_NAME		"112.93.116.189" //"127.0.0.1" 
+#define SERVER_NAME		"112.93.116.189"   //"112.93.116.188" //"112.93.116.189" //"127.0.0.1" 
 #define SERVER_HOSTNAME	"debug.quanjiakan.com"
 #define SERVER_PORT		8888
 #define RECV_BUFFER_SIZE	1024
@@ -70,6 +71,28 @@ typedef long long C_DEVID;
 #define SENT_TIMEOUT	3
 
 
+#define DEBUG_WARNNING		0
+#define DEBUG_TRACE			1
+#define DEBUG_ERROR			2
+
+#define DEBUG_LEVEL			DEBUG_TRACE
+
+
+
+#if (DEBUG_LEVEL == DEBUG_WARNNING)
+#define warn(format, ...)			fprintf(stdout, format, ##__VA_ARGS__)
+#elif (DEBUG_LEVEL == DEBUG_TRACE)
+#define LOG(format, ...) 			fprintf(stdout, format, ##__VA_ARGS__)
+#define warn(format, ...)			fprintf(stdout, format, ##__VA_ARGS__)
+#define trace(format, ...)			fprintf(stdout, format, ##__VA_ARGS__)
+#elif (DEBUG_LEVEL == DEBUG_ERROR)
+#define error(format, ...)			fprintf(stdout, format, ##__VA_ARGS__)
+#else
+#define LOG(format, ...) 			fprintf(stdout, format, ##__VA_ARGS__)
+#endif
+
+
+#if 0
 typedef struct _ThreadArg {
 	int sockfd;
 	C_DEVID devid;
@@ -83,7 +106,7 @@ typedef struct _FRIENDSINFO {
 	U8 isP2P;
 	U8 counter;
 } FriendsInfo;
-
+#endif
 
 #define SIGNAL_LOGIN_REQ			0x00000001
 #define SIGNAL_LOGIN_ACK			0x00000003
@@ -121,46 +144,58 @@ enum {
 	LEVEL_DEFAULT			= 0xFF,
 } LEVEL;
 
+typedef enum  {
+	NTY_TIMER_ID_START = 0,
+	NTY_TIMER_ID_HEARTBEAT = NTY_TIMER_ID_START,
+	NTY_TIMER_ID_RECONNECT = 1,
+	NTY_TIMER_ID_SENDBIGBUFFER = 2,
+	NTY_TIMER_ID_RECVBIGBUFFER = 3,
+	NTY_TIMER_ID_SENDPACKET = 4,
+	NTY_TIMER_ID_END = NTY_TIMER_ID_SENDPACKET,
+	NTY_TIMER_ID_COUNT,
+} NTY_TIMER_ID;
+
 
 #define CACHE_BUFFER_SIZE	1048
 
-#define HEARTBEAT_TIMEOUT		240
-#define RECONNECT_TICK_TIME		60
+#define PACKET_SEND_TIME_TICK	10
+#define HEARTBEAT_TIME_TICK		300
+#define RECONNECT_TIME_TICK		60
 #define P2P_HEARTBEAT_TIMEOUT	60
 #define P2P_HEARTBEAT_TIMEOUT_COUNTR	5
 
 typedef void (*PROXY_CALLBACK)(int len);
 typedef void (*PROXY_HANDLE_CB)(C_DEVID id, int len);
 
+typedef void (*NTY_STATUS_CALLBACK)(int status);
+typedef void (*NTY_PARAM_CALLBACK)(U8 *arg, int length);
+typedef void (*NTY_RETURN_CALLBACK)(C_DEVID fromId, U8 *arg, int length);
+
 
 typedef struct _NETWORK {
 	const void *_;
 	int sockfd;
-	struct sockaddr_in addr;
-	int length;	
-	HANDLE_TIMER onAck;
-	PROXY_CALLBACK onDataLost;
-	U32 ackNum;
-	U8 buffer[CACHE_BUFFER_SIZE];
-	//void *timer;
+	struct addrinfo addr;
 } Network;
+
+typedef Network ClientSocket;
 
 typedef struct _NETWORKOPERA {
 	size_t size;
 	void* (*ctor)(void *_self, va_list *params);
 	void* (*dtor)(void *_self);
-	int (*send)(void *_self, struct sockaddr_in *to, U8 *buf, int len);
-	int (*recv)(void *_self, U8 *buf, int len, struct sockaddr_in *from);
+	int (*send)(void *_self, U8 *buffer, int len);
+	int (*recv)(void *_self, U8 *buffer, int len);
 	int (*resend)(void *_self);
 	int (*reconnect)(void *_self);
 } NetworkOpera;
 
+typedef NetworkOpera ClientSocketHandle;
 
-void *ntyNetworkInstance(void);
-void *ntyGetNetworkInstance(void);
-void *ntyNetworkRelease(void *self);
-int ntySendFrame(void *self, struct sockaddr_in *to, U8 *buf, int len);
-int ntyRecvFrame(void *self, U8 *buf, int len, struct sockaddr_in *from);
+void* ntyNetworkInstance(void);
+void* ntyNetworkRelease(void);
+int ntySendFrame(void *self, U8 *buffer, int len);
+int ntyRecvFrame(void *self, U8 *buffer, int len);
 int ntyReconnect(void *self);
 
 
@@ -168,8 +203,8 @@ int ntyGetSocket(void *self);
 U8 ntyGetReqType(void *self);
 C_DEVID ntyGetDestDevId(void *self);
 void ntySetDevId(C_DEVID id);
-void ntyGenCrcTable(void);
 
+void ntyGenCrcTable(void);
 
 
 #endif
