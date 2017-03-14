@@ -1123,6 +1123,7 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 	NattyProtoOpera * const *protoOpera = arg;
 	Network *pNetwork = ntyNetworkInstance();
 	U8 MSG = buf[NTY_PROTO_MSGTYPE_IDX];
+	buf[length-4] = 0x0;
 
 	switch (MSG) {
 		case NTY_PROTO_LOGIN_ACK: {
@@ -1132,7 +1133,9 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 			U8 *json = buf+NTY_PROTO_LOGIN_ACK_JSON_CONTENT_IDX;
 
 			LOG(" LoginAckResult status:%d\n", status);
-			proto->onLoginAckResult(json, jsonLen);
+			if (proto) {
+				proto->onLoginAckResult(json, jsonLen);
+			}
 			break;
 		} 
 		case NTY_PROTO_BIND_ACK: {
