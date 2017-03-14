@@ -1251,8 +1251,8 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 			break;
 		}
 		case NTY_PROTO_DATA_RESULT: {
-			U16 jsonLen = *(U16*)(buf+NTY_PROTO_DATA_ROUTE_JSON_LENGTH_IDX);
-			U8 *json = buf+NTY_PROTO_DATA_ROUTE_JSON_CONTENT_IDX;
+			U16 jsonLen = *(U16*)(buf+NTY_PROTO_DATA_RESULT_JSON_LENGTH_IDX);
+			U8 *json = buf+NTY_PROTO_DATA_RESULT_JSON_CONTENT_IDX;
 
 			LOG("Data Result:%d\n", json);
 		
