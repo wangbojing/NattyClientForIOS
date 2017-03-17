@@ -75,25 +75,25 @@ void ntyDisconnect(int arg) {
 }
 
 void ntyReconnected(int arg) {
-	ntydbg("ntyReconnected\n");
+	ntydbg("ntyReconnected Success\n");
 }
 
 void ntyBindResult(int arg) {
-	ntydbg(" ntyBindResult --> arg: %d", arg);
+	ntydbg(" ntyBindResult --> arg: %d\n", arg);
 }
 
 void ntyUnBindResult(int arg) {
-	ntydbg(" ntyUnBindResult --> arg: %d", arg);
+	ntydbg(" ntyUnBindResult --> arg: %d\n", arg);
 }
 
 void ntyPacketRecv(int arg) { //voice data recv success, arg: length of voice data
-	ntydbg(" ntyUnBindResult --> arg: %d", arg);
+	ntydbg(" ntyUnBindResult --> arg: %d\n", arg);
 
 	U8 *pBuffer = ntyGetRecvBigBuffer();	//
 }
 
 void ntyPacketSuccess(int arg) {
-	ntydbg(" ntyUnBindResult --> arg: %d", arg);
+	ntydbg(" ntyUnBindResult --> arg: %d\n", arg);
 }
 
 void ntyLoginAckResult(U8 *json, int length) {
@@ -163,6 +163,9 @@ void ntyCommonBoradCastResult(DEVID fromId, U8 *json, int length) {
 }
 
 
+void ntyLocationPush(U8 *arg, int length) {
+	ntydbg(" ntyPush --> length: %s\n", arg);
+}
 
 
 DEVID g_devid = 0x352315052834187;

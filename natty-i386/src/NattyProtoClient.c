@@ -58,7 +58,7 @@
 #include "NattyUtils.h"
 #include "NattyNetwork.h"
 #include "NattyResult.h"
-//#include "NattyVector.h"
+#include "NattyVector.h"
 
 
 /* ** **** ******** **************** Global Variable **************** ******** **** ** */
@@ -81,6 +81,7 @@ void ntyProtoRelease(void);
 
 
 static int ntySendBigBuffer(void *self, U8 *u8Buffer, int length, C_DEVID gId);
+static int ntyReconnectCb(NITIMER_ID id, void *user_data, int len);
 
 
 #if 1 //
@@ -92,6 +93,42 @@ typedef enum {
 	STATUS_NETWORK_PROXYDATA,
 	STATUS_NETWORK_LOGOUT,
 } StatusNetwork;
+
+#if 1 //local
+static C_DEVID gSelfId = 0;
+RECV_CALLBACK onRecvCallback = NULL;
+PROXY_CALLBACK onProxyCallback = NULL;
+PROXY_CALLBACK onProxyFailed = NULL; //send data failed
+PROXY_CALLBACK onProxySuccess = NULL; //send data success
+PROXY_CALLBACK onProxyDisconnect = NULL;
+PROXY_CALLBACK onProxyReconnect = NULL;
+PROXY_CALLBACK onBindResult = NULL;
+PROXY_CALLBACK onUnBindResult = NULL;
+PROXY_CALLBACK onPacketRecv = NULL;
+PROXY_CALLBACK onPacketSuccess = NULL;
+
+NTY_PARAM_CALLBACK onLoginAckResult = NULL; //RECV LOGIN_ACK
+NTY_STATUS_CALLBACK onHeartBeatAckResult = NULL; //RECV HEARTBEAT_ACK
+NTY_STATUS_CALLBACK onLogoutAckResult = NULL; //RECV LOGOUT_ACK
+NTY_PARAM_CALLBACK onTimeAckResult = NULL; //RECV TIME_ACK
+NTY_PARAM_CALLBACK onICCIDAckResult = NULL; //RECV ICCID_ACK
+NTY_RETURN_CALLBACK onCommonReqResult = NULL; //RECV COMMON_REQ
+
+NTY_STATUS_CALLBACK onVoiceDataAckResult = NULL; //RECV VOICE_DATA_ACK
+NTY_PARAM_CALLBACK onOfflineMsgAckResult = NULL; //RECV OFFLINE_MSG_ACK
+NTY_PARAM_CALLBACK onLocationPushResult = NULL; //RECV LOCATION_PUSH
+NTY_PARAM_CALLBACK onWeatherPushResult = NULL; //RECV WEATHER_PUSH
+NTY_RETURN_CALLBACK onDataRoute = NULL; //RECV DATA_RESULT
+NTY_PARAM_CALLBACK onDataResult = NULL; //RECV DATA_RESULT
+NTY_RETURN_CALLBACK onVoiceBroadCastResult = NULL; //RECV VOICE_BROADCAST
+NTY_RETURN_CALLBACK onLocationBroadCastResult = NULL; //RECV LOCATION_BROADCAST
+NTY_RETURN_CALLBACK onCommonBroadCastResult = NULL; //RECV COMMON_BROADCAST
+	
+U8 u8ConnectFlag = 0;;
+
+
+#endif
+
 
 typedef struct _NATTYPROTOCOL {
 	const void *_;
@@ -177,10 +214,42 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 	NattyProto *proto = _self;
 
 	proto->onRecvCallback = ntyRecvProc;
+	proto->selfId = gSelfId;
 	proto->recvLen = 0;
 	memset(proto->recvBuffer, 0, RECV_BUFFER_SIZE);
 	//proto->friends = ntyVectorCreator();
 
+	proto->onProxyCallback = onProxyCallback; //just for java
+	proto->onProxyFailed = onProxyFailed; //send data failed
+	proto->onProxySuccess = onProxySuccess; //send data success
+	proto->onProxyDisconnect = onProxyDisconnect;
+	proto->onProxyReconnect = onProxyReconnect;
+
+	proto->onBindResult = onBindResult;
+	proto->onUnBindResult = onUnBindResult;
+	proto->onPacketRecv = onPacketRecv;
+	proto->onPacketSuccess = onPacketSuccess;
+	
+	proto->onLoginAckResult = onLoginAckResult; //RECV LOGIN_ACK
+	proto->onHeartBeatAckResult = onHeartBeatAckResult; //RECV HEARTBEAT_ACK
+	proto->onLogoutAckResult = onLogoutAckResult; //RECV LOGOUT_ACK
+
+	proto->onTimeAckResult = onTimeAckResult; //RECV TIME_ACK
+	proto->onICCIDAckResult = onICCIDAckResult; //RECV ICCID_ACK
+	proto->onCommonReqResult = onCommonReqResult; //RECV COMMON_REQ
+
+	proto->onVoiceDataAckResult = onVoiceDataAckResult; //RECV VOICE_DATA_ACK
+	proto->onOfflineMsgAckResult = onOfflineMsgAckResult; //RECV OFFLINE_MSG_ACK
+	proto->onLocationPushResult = onLocationPushResult; //RECV LOCATION_PUSH
+
+	proto->onWeatherPushResult = onWeatherPushResult; //RECV WEATHER_PUSH
+	proto->onDataRoute = onDataRoute; //RECV DATA_RESULT
+	proto->onDataResult = onDataResult; //RECV DATA_RESULT
+
+	proto->onVoiceBroadCastResult = onVoiceBroadCastResult; //RECV VOICE_BROADCAST
+	proto->onLocationBroadCastResult = onLocationBroadCastResult; //RECV LOCATION_BROADCAST
+	proto->onCommonBroadCastResult = onCommonBroadCastResult; //RECV COMMON_BROADCAST
+	
 	ntyGenCrcTable();
 	//Setup Socket Connection
 	Network *network = ntyNetworkInstance();
@@ -189,7 +258,7 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 	} else {
 		proto->u8ConnectFlag = 1;
 	}
-
+	
 	//Create Timer
 	void *nTimerList = ntyTimerInstance();
 	nHeartBeatTimer = ntyTimerAdd(nTimerList, HEARTBEAT_TIME_TICK, ntyHeartBeatCb, NULL, 0);
@@ -209,6 +278,7 @@ void* ntyProtoClientDtor(void *_self) {
 
 	//Release Socket Connection
 	ntyNetworkRelease();
+
 	
 	//ntyVectorDestory(proto->friends);
 	proto->u8ConnectFlag = 0;
@@ -306,7 +376,7 @@ int ntyProtoClientLogin(void *_self) {
 #endif
 		
 
-	ntydbg(" ntyProtoClientLogin %d\n", __LINE__);
+	trace(" ntyProtoClientLogin %d\n", __LINE__);
 	ClientSocket *nSocket = ntyNetworkInstance();
 	return ntySendFrame(nSocket, buffer, len);
 }
@@ -329,7 +399,7 @@ int ntyProtoClientBind(void *_self, C_DEVID did) {
 #endif
 	len = NTY_PROTO_BIND_CRC_IDX + sizeof(U32);
 
-	ntydbg(" ntyProtoClientBind --> ");
+	trace(" ntyProtoClientBind --> %d", did);
 
 	ClientSocket *nSocket = ntyNetworkInstance();
 	return ntySendFrame(nSocket, buf, len);
@@ -353,6 +423,27 @@ int ntyProtoClientUnBind(void *_self, C_DEVID did) {
 	ClientSocket *nSocket = ntyNetworkInstance();
 	return ntySendFrame(nSocket, buf, len);
 }
+
+int ntyProtoClientHeartBeat(void *_self) {
+	NattyProto *proto = _self;
+	int len;	
+
+	U8 buf[NORMAL_BUFFER_SIZE] = {0};	
+
+	buf[NTY_PROTO_VERSION_IDX] = NTY_PROTO_VERSION;	
+	buf[NTY_PROTO_PROTOTYPE_IDX] = (U8) PROTO_REQ;	
+	buf[NTY_PROTO_MSGTYPE_IDX] = NTY_PROTO_HEARTBEAT_REQ;
+
+	memcpy(buf+NTY_PROTO_HEARTBEAT_REQ_DEVID_IDX, &proto->selfId, sizeof(C_DEVID));
+	//memcpy(buf+NTY_PROTO_UNBIND_DEVICEID_IDX, &did, sizeof(C_DEVID));
+	//*(C_DEVID*)(&buf[NTY_PROTO_UNBIND_DEVICEID_IDX]) = did;
+	len = NTY_PROTO_HEARTBEAT_REQ_CRC_IDX + sizeof(U32);
+
+	ClientSocket *nSocket = ntyNetworkInstance();
+	return ntySendFrame(nSocket, buf, len);
+}
+
+
 
 int ntyProtoClientLogout(void *_self) {
 	NattyProto *proto = _self;
@@ -441,6 +532,42 @@ int ntyProtoClientCommonReq(void *_self, C_DEVID gId, U8 *json, U16 length) {
 	return ntySendFrame(pNetwork, buf, length);
 }
 
+int ntyProtoClientLocationReq(void *_self, C_DEVID gId, U8 *json, U16 length) {
+	NattyProto *proto = _self;
+	U8 buf[RECV_BUFFER_SIZE] = {0}; 
+
+	buf[NTY_PROTO_VERSION_IDX] = NTY_PROTO_VERSION;
+	buf[NTY_PROTO_PROTOTYPE_IDX] = (U8) PROTO_ASYNCREQ; 
+	buf[NTY_PROTO_MSGTYPE_IDX] = NTY_PROTO_LOCATION_ASYNCREQ;
+
+	memcpy(&buf[NTY_PROTO_LOCATION_ASYNC_REQ_DEVID_IDX], &proto->selfId, sizeof(C_DEVID));
+	memcpy(&buf[NTY_PROTO_LOCATION_ASYNC_REQ_JSON_LENGTH_IDX], &length, sizeof(U16));
+	memcpy(&buf[NTY_PROTO_LOCATION_ASYNC_REQ_JSON_CONTENT_IDX], json, length);
+
+	length = NTY_PROTO_LOCATION_ASYNC_REQ_JSON_CONTENT_IDX + length + sizeof(U32);
+
+	void *pNetwork = ntyNetworkInstance();
+	return ntySendFrame(pNetwork, buf, length);
+}
+
+int ntyProtoClientWeatherReq(void *_self, C_DEVID gId, U8 *json, U16 length) {
+	NattyProto *proto = _self;
+	U8 buf[RECV_BUFFER_SIZE] = {0}; 
+
+	buf[NTY_PROTO_VERSION_IDX] = NTY_PROTO_VERSION;
+	buf[NTY_PROTO_PROTOTYPE_IDX] = (U8) PROTO_ASYNCREQ; 
+	buf[NTY_PROTO_MSGTYPE_IDX] = NTY_PROTO_WEATHER_ASYNCREQ;
+
+	memcpy(&buf[NTY_PROTO_WEATHER_ASYNC_REQ_DEVID_IDX], &proto->selfId, sizeof(C_DEVID));
+	memcpy(&buf[NTY_PROTO_WEATHER_ASYNC_REQ_JSON_LENGTH_IDX], &length, sizeof(U16));
+	memcpy(&buf[NTY_PROTO_WEATHER_ASYNC_REQ_JSON_CONTENT_IDX], json, length);
+
+	length = NTY_PROTO_LOCATION_ASYNC_REQ_JSON_CONTENT_IDX + length + sizeof(U32);
+	
+	void *pNetwork = ntyNetworkInstance();
+	return ntySendFrame(pNetwork, buf, length);
+}
+
 
 int ntyProtoClientCommonAck(void *_self, U8 *json, U16 length) {
 	NattyProto *proto = _self;
@@ -505,12 +632,7 @@ static const NattyProtoHandle ntyProtoOpera = {
 	ntyProtoClientDtor,
 	ntyProtoClientLogin,
 	ntyProtoClientLogout,
-#if 0
-	ntyProtoClientProxyReq,
-	ntyProtoClientProxyAck,
-	ntyProtoClientEfenceReq,
-	ntyProtoClientEfenceAck,
-#else
+
 	ntyProtoClientVoiceReq,
 	ntyProtoClientVoiceAck,
 	ntyProtoClientVoiceDataReq,
@@ -518,7 +640,7 @@ static const NattyProtoHandle ntyProtoOpera = {
 	ntyProtoClientCommonAck,
 	ntyProtoClientOfflineMsgReq,
 	ntyProtoClientDataRoute,
-#endif
+	
 	ntyProtoClientBind,
 	ntyProtoClientUnBind,
 };
@@ -529,7 +651,6 @@ static NattyProto *pProtoOpera = NULL;
 
 void *ntyProtoInstance(void) { //Singleton
 	if (pProtoOpera == NULL) {
-		ntydbg("ntyProtoInstance\n");
 		pProtoOpera = New(pNattyProtoOpera);
 		if (pProtoOpera->u8ConnectFlag == 0) { //Socket Connect Failed
 			Delete(pProtoOpera);
@@ -585,151 +706,88 @@ static int ntySendLogout(void *self) {
 }
 
 void ntySetSendSuccessCallback(PROXY_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onProxySuccess = cb;
-	}
+	onProxySuccess = cb;
 }
 
 void ntySetSendFailedCallback(PROXY_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onProxyFailed = cb;
-	}
+	onProxyFailed = cb;
 }
 
 void ntySetProxyCallback(PROXY_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onProxyCallback = cb;
-	}
+	onProxyCallback = cb;
 }
 
 void ntySetProxyDisconnect(PROXY_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onProxyDisconnect = cb;
-	}
+	onProxyDisconnect = cb;
 }
 
 void ntySetProxyReconnect(PROXY_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onProxyReconnect = cb;
-	}
+	onProxyReconnect = cb;
 }
 
 void ntySetBindResult(PROXY_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onBindResult = cb;
-	}
+	onBindResult = cb;
 }
 
 void ntySetUnBindResult(PROXY_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onUnBindResult = cb;
-	}
+	onUnBindResult = cb;
 }
 
 void ntySetPacketRecv(PROXY_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onPacketRecv = cb;
-	}
+	onPacketRecv = cb;
 }
 
 void ntySetPacketSuccess(PROXY_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onPacketSuccess = cb;
-	}
+	onPacketSuccess = cb;
 }
 
 
 void ntySetDevId(C_DEVID id) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->selfId = id;
-	}
+	gSelfId = id;
 }
 
 void ntySetLoginAckResult(NTY_PARAM_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onLoginAckResult = cb;
-	}
+	onLoginAckResult = cb;
 }
 
 void ntySetHeartBeatAckResult(NTY_STATUS_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onHeartBeatAckResult = cb;
-	}
+	onHeartBeatAckResult = cb;
 }
 
 void ntySetLogoutAckResult(NTY_STATUS_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onLogoutAckResult = cb;
-	}
+	onLogoutAckResult = cb;
 }
 
 void ntySetTimeAckResult(NTY_PARAM_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onTimeAckResult = cb;
-	}
+	onTimeAckResult = cb;
 }
 
 void ntySetICCIDAckResult(NTY_PARAM_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onICCIDAckResult = cb;
-	}
+	onICCIDAckResult = cb;
 }
 
 void ntySetCommonReqResult(NTY_RETURN_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onCommonReqResult = cb;
-	}
+	onCommonReqResult = cb;
 }
 
 void ntySetVoiceDataAckResult(NTY_STATUS_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onVoiceDataAckResult = cb;
-	}
+	onVoiceDataAckResult = cb;
 }
 
 void ntySetOfflineMsgAckResult(NTY_PARAM_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onOfflineMsgAckResult = cb;
-	}
+	onOfflineMsgAckResult = cb;
 }
 
 void ntySetLocationPushResult(NTY_PARAM_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onLocationPushResult = cb;
-	}
+	onLocationPushResult = cb;
 }
 
 void ntySetWeatherPushResult(NTY_PARAM_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onWeatherPushResult = cb;
-	}
+	onWeatherPushResult = cb;
 }
 
 void ntySetDataRoute(NTY_RETURN_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onDataRoute = cb;
-	}
+	onDataRoute = cb;
 }
 
 void ntySetDataResult(NTY_PARAM_CALLBACK cb) {
@@ -740,50 +798,33 @@ void ntySetDataResult(NTY_PARAM_CALLBACK cb) {
 }
 
 void ntySetVoiceBroadCastResult(NTY_RETURN_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onVoiceBroadCastResult = cb;
-	}
+	onVoiceBroadCastResult = cb;
 }
 
 void ntySetLocationBroadCastResult(NTY_RETURN_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onLocationBroadCastResult = cb;
-	}
+	onLocationBroadCastResult = cb;
 }
 
 void ntySetCommonBroadCastResult(NTY_RETURN_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onCommonBroadCastResult = cb;
-	}
-}
-
-
-int ntyGetNetworkStatus(void) {
-	void *network = ntyNetworkInstance();
-	return ntyGetSocket(network);
+	onCommonBroadCastResult = cb;
 }
 
 
 int ntyCheckProtoClientStatus(void) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
+	
 #if 0
-		if (proto->onProxyCallback == NULL) return -2;
-		if (proto->onProxyFailed == NULL) return -3;
-		if (proto->onProxySuccess == NULL) return -4;
+	if (onProxyCallback == NULL) return -2;
+	if (onProxyFailed == NULL) return -3;
+	if (onProxySuccess == NULL) return -4;
 #endif
-		if (proto->onProxyDisconnect == NULL) return -5;
-		if (proto->onProxyReconnect == NULL) return -6;
-		if (proto->onBindResult == NULL) return -7;
-		if (proto->onUnBindResult == NULL) return -8;
-		if (proto->onRecvCallback == NULL) return -9;
-		if (proto->onPacketRecv == NULL) return -10;
-		if (proto->onPacketSuccess == NULL) return -11;
-	}
-	return 0;
+	if (onProxyDisconnect == NULL) return -5;
+	if (onProxyReconnect == NULL) return -6;
+	if (onBindResult == NULL) return -7;
+	if (onUnBindResult == NULL) return -8;
+	if (onRecvCallback == NULL) return -9;
+	if (onPacketRecv == NULL) return -10;
+	if (onPacketSuccess == NULL) return -11;
+	
 }
 
 void* ntyStartupClient(int *status) {
@@ -791,9 +832,17 @@ void* ntyStartupClient(int *status) {
 	if (proto) {
 		ntySendLogin(proto);
 		ntySetupRecvProcThread(proto); //setup recv proc
+		
+		*status = proto->u8ConnectFlag;
+	} else {
+		if (nReconnectTimer == NULL) {
+			// startup failed
+			void *nTimerList = ntyTimerInstance();
+			nReconnectTimer = ntyTimerAdd(nTimerList, 15, ntyReconnectCb, NULL, 0);
+		}
+		*status = -1;
 	}
 
-	*status = ntyGetNetworkStatus();
 	
 	return proto;
 }
@@ -857,6 +906,21 @@ int ntyCommonReqClient(C_DEVID gId, U8 *json, U16 length) {
 	return -1;
 }
 
+int ntyLocationReqClient(C_DEVID gId, U8 *json, U16 length) {
+	NattyProto* proto = ntyProtoInstance();
+	if (proto) {
+		return ntyProtoClientLocationReq(proto, gId, json, length);
+	}
+	return -1;
+}
+
+int ntyWeatherReqClient(C_DEVID gId, U8 *json, U16 length) {
+	NattyProto* proto = ntyProtoInstance();
+	if (proto) {
+		return ntyProtoClientWeatherReq(proto, gId, json, length);
+	}
+	return -1;
+}
 
 int ntyCommonAckClient(U8 *json, U16 length) {
 	NattyProto* proto = ntyProtoInstance();
@@ -912,7 +976,7 @@ static int ntyReconnectCb(NITIMER_ID id, void *user_data, int len) {
 	NattyProto *proto = ntyStartupClient(&status);
 	if (status != -1 && (proto != NULL)) {
 		//NattyProto *proto = ntyProtoInstance();
-		trace(" ntyReconnectCb ... status:%d, flag:%d\n", status, proto->u8ConnectFlag);
+		trace(" ntyReconnectCb  Success... status:%d, flag:%d\n", status, proto->u8ConnectFlag);
 		if (proto->u8ConnectFlag) { //Reconnect Success
 			if (proto->onProxyReconnect)
 				proto->onProxyReconnect(0);
@@ -947,8 +1011,12 @@ void ntyReleaseFriendsList(C_DEVID **list) {
 #endif
 
 void ntyStartReconnectTimer(void) {
-	void *nTimerList = ntyTimerInstance();
-	nReconnectTimer = ntyTimerAdd(nTimerList, RECONNECT_TIME_TICK, ntyReconnectCb, NULL, 0);
+//disconnect 
+	ntylog(" setup ntyStartReconnectTimer \n");
+	if (nReconnectTimer == NULL) {
+		void *nTimerList = ntyTimerInstance();
+		nReconnectTimer = ntyTimerAdd(nTimerList, 15, ntyReconnectCb, NULL, 0);
+	}
 }
 
 
@@ -1123,7 +1191,7 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 	NattyProtoOpera * const *protoOpera = arg;
 	Network *pNetwork = ntyNetworkInstance();
 	U8 MSG = buf[NTY_PROTO_MSGTYPE_IDX];
-	buf[length-4] = 0x0;
+	buf[length-NTY_CRCNUM_LENGTH] = 0x0;
 
 	switch (MSG) {
 		case NTY_PROTO_LOGIN_ACK: {
@@ -1133,7 +1201,7 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 			U8 *json = buf+NTY_PROTO_LOGIN_ACK_JSON_CONTENT_IDX;
 
 			LOG(" LoginAckResult status:%d\n", status);
-			if (proto) {
+			if (proto->onLoginAckResult) {
 				proto->onLoginAckResult(json, jsonLen);
 			}
 			break;
@@ -1175,15 +1243,15 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 		}
 		case NTY_PROTO_ICCID_ACK: {
 			U16 status = 0;
-			U16 length = 0;
+			U16 u16Length = 0;
 			U8 *json = NULL;
 
 			memcpy(&status, buf+NTY_PROTO_ICCID_ACK_STATUS_IDX, sizeof(U16));
-			memcpy(&length, buf+NTY_PROTO_ICCID_ACK_JSON_LENGTH_IDX, sizeof(U16));
+			memcpy(&u16Length, buf+NTY_PROTO_ICCID_ACK_JSON_LENGTH_IDX, sizeof(U16));
 			json = buf+NTY_PROTO_ICCID_ACK_JSON_CONTENT_IDX;
 
 			if (proto->onICCIDAckResult) {
-				proto->onICCIDAckResult(json, length);
+				proto->onICCIDAckResult(json, u16Length);
 			}
 			
 			break;
@@ -1191,16 +1259,16 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 #endif
 		case NTY_PROTO_COMMON_REQ: {
 			C_DEVID fromId = 0;
-			U16 length = 0;
+			U16 u16Length = 0;
 			U8 *json = NULL;
 
 			ntyU8ArrayToU64(buf+NTY_PROTO_COMMON_REQ_DEVID_IDX, &fromId);
-			memcpy(&length, buf+NTY_PROTO_COMMON_REQ_JSON_LENGTH_IDX, sizeof(U16));
+			memcpy(&u16Length, buf+NTY_PROTO_COMMON_REQ_JSON_LENGTH_IDX, sizeof(U16));
 
 			json = buf+NTY_PROTO_COMMON_REQ_JSON_CONTENT_IDX;
 
 			if (proto->onCommonReqResult) {
-				proto->onCommonReqResult(fromId, json, length);
+				proto->onCommonReqResult(fromId, json, u16Length);
 			}
 			
 			break;
@@ -1208,6 +1276,7 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 		case NTY_PROTO_VOICE_DATA_REQ: {
 			int ret = ntyAudioRecodeDepacket(buf, length);
 			if (ret == 1) {
+				
 				C_DEVID fromId = 0;
 				ntyU8ArrayToU64(buf+NTY_PROTO_VOICE_DATA_REQ_DEVID_IDX, &fromId);
 
@@ -1254,13 +1323,20 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 			break;
 		}
 		case NTY_PROTO_DATA_RESULT: {
-			U16 jsonLen = *(U16*)(buf+NTY_PROTO_DATA_RESULT_JSON_LENGTH_IDX);
+			U16 status = 0;
+			int ackNum = 0;
+			U16 u16Length = 0;
+			
 			U8 *json = buf+NTY_PROTO_DATA_RESULT_JSON_CONTENT_IDX;
-
-			LOG("Data Result:%d\n", json);
+			memcpy(&u16Length, buf+NTY_PROTO_DATA_RESULT_JSON_LENGTH_IDX, sizeof(U16));
+			
+			memcpy(&status, buf+NTY_PROTO_DATA_RESULT_STATUS_IDX, sizeof(U16));
+			memcpy(&ackNum, buf+NTY_PROTO_DATA_RESULT_ACKNUM_IDX, sizeof(U32));
+			
+			LOG("Data Result:%d\n", status);
 		
 			if (proto->onDataResult) {
-				proto->onDataResult(json, jsonLen);
+				proto->onDataResult(json, u16Length);
 			}
 			
 			break;
@@ -1270,7 +1346,7 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 			U8 *json = NULL;
 			U16 length = 0;
 			
-			memcpy(&fromId, buf+NTY_PROTO_VOICE_BROADCAST_DEVID_IDX, sizeof(DEVID));
+			memcpy(&fromId, buf+NTY_PROTO_VOICE_BROADCAST_DEVID_IDX, sizeof(C_DEVID));
 			memcpy(&length, buf+NTY_PROTO_VOICE_BROADCAST_JSON_LENGTH_IDX, sizeof(U16));
 
 			json = buf+NTY_PROTO_VOICE_BROADCAST_JSON_CONTENT_IDX;
@@ -1285,31 +1361,31 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 		case NTY_PROTO_LOCATION_BROADCAST: {
 			C_DEVID fromId = 0;
 			U8 *json = NULL;
-			U16 length = 0;
+			U16 u16Length = 0;
 			
 			memcpy(&fromId, buf+NTY_PROTO_LOCATION_BROADCAST_DEVID_IDX, sizeof(C_DEVID));
-			memcpy(&length, buf+NTY_PROTO_LOCATION_BROADCAST_JSON_LENGTH_IDX, sizeof(U16));
+			memcpy(&u16Length, buf+NTY_PROTO_LOCATION_BROADCAST_JSON_LENGTH_IDX, sizeof(U16));
 
 			json = buf+NTY_PROTO_LOCATION_BROADCAST_JSON_CONTENT_IDX;
 			
 
 			if (proto->onLocationBroadCastResult) {
-				proto->onLocationBroadCastResult(fromId, json, length);
+				proto->onLocationBroadCastResult(fromId, json, u16Length);
 			}
 			break;
 		}
 		case NTY_PROTO_COMMON_BROADCAST: {
 			DEVID fromId = 0;
 			U8 *json = NULL;
-			U16 length = 0;
+			U16 u16Length = 0;
 			
 			memcpy(&fromId, buf+NTY_PROTO_COMMON_BROADCAST_DEVID_IDX, sizeof(DEVID));
-			memcpy(&length, buf+NTY_PROTO_COMMON_BROADCAST_JSON_LENGTH_IDX, sizeof(U16));
+			memcpy(&u16Length, buf+NTY_PROTO_COMMON_BROADCAST_JSON_LENGTH_IDX, sizeof(U16));
 
 			json = buf+NTY_PROTO_COMMON_BROADCAST_JSON_CONTENT_IDX;
 			
 			if (proto->onCommonBroadCastResult) {
-				proto->onCommonBroadCastResult(fromId, json, length);
+				proto->onCommonBroadCastResult(fromId, json, u16Length);
 			}
 			
 			break;
@@ -1317,13 +1393,13 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 #if (NTY_PROTO_SELFTYPE == NTY_PROTO_CLIENT_WATCH)		
 		case NTY_PROTO_LOCATION_PUSH: {
 			U8 *json = NULL;
-			U16 length = 0;
+			U16 u16Length = 0;
 			
-			memcpy(&length, buf+NTY_PROTO_LOCATION_PUSH_JSON_LENGTH_IDX, sizeof(U16));
+			memcpy(&u16Length, buf+NTY_PROTO_LOCATION_PUSH_JSON_LENGTH_IDX, sizeof(U16));
 			json = buf+NTY_PROTO_LOCATION_PUSH_JSON_CONTENT_IDX;
-
+			
 			if (proto->onLocationPushResult) {
-				proto->onLocationPushResult(json, length);
+				proto->onLocationPushResult(json, u16Length);
 			}
 
 			break;
@@ -1331,20 +1407,19 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 		case NTY_PROTO_WEATHER_PUSH: {
 
 			U8 *json = NULL;
-			U16 length = 0;
+			U16 u16Length = 0;
 			
-			memcpy(&length, buf+NTY_PROTO_WEATHER_PUSH_JSON_LENGTH_IDX, sizeof(U16));
+			memcpy(&u16Length, buf+NTY_PROTO_WEATHER_PUSH_JSON_LENGTH_IDX, sizeof(U16));
 			json = buf+NTY_PROTO_WEATHER_PUSH_JSON_CONTENT_IDX;
 
 			if (proto->onWeatherPushResult) {
-				proto->onWeatherPushResult(json, length);
+				proto->onWeatherPushResult(json, u16Length);
 			}
 			
 			break;
 		}
 #endif		
 	}
-	
 }
 
 static U8 rBuffer[NTY_VOICEREQ_PACKET_LENGTH] = {0};
@@ -1355,10 +1430,11 @@ int ntyPacketValidator(void *self, U8 *buffer, int length) {
 	int bCopy = 0, bIndex = 0, ret = -1;
 	U32 uCrc = 0, uClientCrc = 0;
 	int bLength = length;
-
-	LOG(" rLength :%d, length:%d\n", rLength, length);
+	
 	uCrc = ntyGenCrcValue(buffer, length-4);
 	uClientCrc = ntyU8ArrayToU32(buffer+length-4);
+	LOG(" rLength :%d, length:%d, crc:%x, u8Crc:%x\n", rLength, length, uCrc, uClientCrc);
+
 	if (uCrc != uClientCrc) {
 		do {
 			bCopy = (bLength > NTY_VOICEREQ_PACKET_LENGTH ? NTY_VOICEREQ_PACKET_LENGTH : bLength);
@@ -1385,11 +1461,12 @@ int ntyPacketValidator(void *self, U8 *buffer, int length) {
 			rLength %= NTY_VOICEREQ_PACKET_LENGTH;
 			
 		} while (bLength);
-	} else {
+	} else  {
 		ntyPacketClassifier(self, buffer, length);
 		rLength = 0;
 		ret = 0;
 	}
+
 	return ret;
 }
 
