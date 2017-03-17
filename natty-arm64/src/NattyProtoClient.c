@@ -97,6 +97,9 @@ typedef enum {
 } StatusNetwork;
 
 #if 1 //local
+
+static char *sdk_version = "NattyIOS V4.0";
+
 static C_DEVID gSelfId = 0;
 RECV_CALLBACK onRecvCallback = NULL;
 PROXY_CALLBACK onProxyCallback = NULL;
@@ -798,10 +801,7 @@ void ntySetDataRoute(NTY_RETURN_CALLBACK cb) {
 }
 
 void ntySetDataResult(NTY_PARAM_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onDataResult = cb;
-	}
+	onDataResult = cb;
 }
 
 void ntySetVoiceBroadCastResult(NTY_RETURN_CALLBACK cb) {
@@ -996,6 +996,10 @@ void ntyStartReconnectTimer(void) {
 		void *nTimerList = ntyTimerInstance();
 		nReconnectTimer = ntyTimerAdd(nTimerList, 15, ntyReconnectCb, NULL, 0);
 	}
+}
+
+char* ntyProtoClientGetVersion(void) {
+	return sdk_version;
 }
 
 

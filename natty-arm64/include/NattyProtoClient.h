@@ -135,6 +135,7 @@ U8 *ntyGetRecvBigBuffer(void);
 U8 *ntyGetSendBigBuffer(void);
 int ntyGetRecvBigLength(void);
 
+char* ntyProtoClientGetVersion(void);
 
 #endif
 
