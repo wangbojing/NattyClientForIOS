@@ -97,6 +97,9 @@ typedef enum {
 } StatusNetwork;
 
 #if 1 //local
+
+static char *sdk_version = "NattyIOS V4.0";
+
 static C_DEVID gSelfId = 0;
 RECV_CALLBACK onRecvCallback = NULL;
 PROXY_CALLBACK onProxyCallback = NULL;
@@ -217,6 +220,7 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 
 	proto->onRecvCallback = ntyRecvProc;
 	proto->selfId = gSelfId;
+	ntydbg("ntyProtoClientCtor : %lld\n", gSelfId);
 	proto->recvLen = 0;
 	memset(proto->recvBuffer, 0, RECV_BUFFER_SIZE);
 	//proto->friends = ntyVectorCreator();
@@ -750,6 +754,7 @@ void ntySetPacketSuccess(PROXY_CALLBACK cb) {
 
 
 void ntySetDevId(C_DEVID id) {
+	ntydbg("SelfId: %lld\n", id);
 	gSelfId = id;
 }
 
@@ -798,10 +803,7 @@ void ntySetDataRoute(NTY_RETURN_CALLBACK cb) {
 }
 
 void ntySetDataResult(NTY_PARAM_CALLBACK cb) {
-	NattyProto* proto = ntyProtoInstance();
-	if (proto) {
-		proto->onDataResult = cb;
-	}
+	onDataResult = cb;
 }
 
 void ntySetVoiceBroadCastResult(NTY_RETURN_CALLBACK cb) {
@@ -996,6 +998,10 @@ void ntyStartReconnectTimer(void) {
 		void *nTimerList = ntyTimerInstance();
 		nReconnectTimer = ntyTimerAdd(nTimerList, 15, ntyReconnectCb, NULL, 0);
 	}
+}
+
+char* ntyProtoClientGetVersion(void) {
+	return sdk_version;
 }
 
 

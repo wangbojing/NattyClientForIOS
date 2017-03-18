@@ -220,6 +220,7 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 
 	proto->onRecvCallback = ntyRecvProc;
 	proto->selfId = gSelfId;
+	ntydbg("ntyProtoClientCtor : %lld\n", gSelfId);
 	proto->recvLen = 0;
 	memset(proto->recvBuffer, 0, RECV_BUFFER_SIZE);
 	//proto->friends = ntyVectorCreator();
@@ -753,6 +754,7 @@ void ntySetPacketSuccess(PROXY_CALLBACK cb) {
 
 
 void ntySetDevId(C_DEVID id) {
+	ntydbg("SelfId: %lld\n", id);
 	gSelfId = id;
 }
 
