@@ -243,7 +243,7 @@ void* ntyTimerInstance(void) {
 		pWheelTimer = New(pNtyTimerHandle, arg);
 		//if ((unsigned long)NULL != cmpxchg((void*)(&pWheelTimer), (unsigned long)NULL, (unsigned long)pTimer, WORD_WIDTH)) {
 		//	Delete(pTimer);
-		//} 
+		//}
 	}
 	return pWheelTimer;
 }

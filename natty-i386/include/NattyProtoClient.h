@@ -62,6 +62,7 @@ typedef void (*PROXY_HANDLE_CLIENT)(DEVID id, int len);
 typedef void (*NTY_STATUS_CALLBACK)(int status);
 typedef void (*NTY_PARAM_CALLBACK)(U8 *arg, int length);
 typedef void (*NTY_RETURN_CALLBACK)(DEVID fromId, U8 *arg, int length);
+typedef void (*NTY_PACKET_CALLBACK)(DEVID fromId, int length);
 
 
 #define CLIENT_BUFFER_SIZE		1024
@@ -86,13 +87,12 @@ U8* ntyGetRecvBuffer(void);
 void ntySetDevId(DEVID id);
 int ntyGetRecvBufferSize(void);
 void ntyReleaseNetwork(void);
-int ntyGetNetworkStatus(void);
 void ntySetBindResult(PROXY_CALLBACK_CLINET cb);
 void ntySetUnBindResult(PROXY_CALLBACK_CLINET cb);
 void ntySetProxyDisconnect(PROXY_CALLBACK_CLINET cb);
 void ntySetProxyReconnect(PROXY_CALLBACK_CLINET cb);
 
-void ntySetPacketRecv(PROXY_CALLBACK_CLINET cb);
+void ntySetPacketRecv(NTY_PACKET_CALLBACK cb);
 void ntySetPacketSuccess(PROXY_CALLBACK_CLINET cb);
 
 
@@ -121,12 +121,12 @@ void ntySetLoginAckResult(NTY_PARAM_CALLBACK cb);
 int ntyBindClient(DEVID did);
 int ntyUnBindClient(DEVID did);
 
-int ntyVoiceReqClient(U8 *json, U16 length);
-int ntyVoiceAckClient(U8 *json, U16 length);
+int ntyVoiceReqClient(U32 msgId, U8 *json, U16 length);
+int ntyVoiceAckClient(U32 msgId, U8 *json, U16 length);
 int ntyVoiceDataReqClient(DEVID gId, U8 *data, int length);
 
 int ntyCommonReqClient(DEVID gId, U8 *json, U16 length);
-int ntyCommonAckClient(U8 *json, U16 length);
+int ntyCommonAckClient(U32 msgId, U8 *json, U16 length);
 int ntyDataRouteClient(DEVID toId, U8 *json, U16 length);
 
 void ntyProtoClientSetToken(void *_self, U8 *tokens, int length);
@@ -135,6 +135,7 @@ U8 *ntyGetRecvBigBuffer(void);
 U8 *ntyGetSendBigBuffer(void);
 int ntyGetRecvBigLength(void);
 
+char* ntyProtoClientGetVersion(void);
 
 #endif
 
