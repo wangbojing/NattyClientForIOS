@@ -62,7 +62,7 @@ typedef void (*PROXY_HANDLE_CLIENT)(DEVID id, int len);
 typedef void (*NTY_STATUS_CALLBACK)(int status);
 typedef void (*NTY_PARAM_CALLBACK)(U8 *arg, int length);
 typedef void (*NTY_RETURN_CALLBACK)(DEVID fromId, U8 *arg, int length);
-typedef void (*NTY_PACKET_CALLBACK)(DEVID fromId, int length);
+typedef void (*NTY_PACKET_CALLBACK)(DEVID fromId, DEVID gId, int length);
 
 
 #define CLIENT_BUFFER_SIZE		1024

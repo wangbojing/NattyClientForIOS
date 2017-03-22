@@ -98,7 +98,7 @@ typedef enum {
 
 #if 1 //local
 
-static char *sdk_version = "NattyAndroid V4.4";
+static char *sdk_version = "NattyIOS V4.2";
 
 static C_DEVID gSelfId = 0;
 RECV_CALLBACK onRecvCallback = NULL;
@@ -483,7 +483,6 @@ int ntyProtoClientVoiceReq(void *_self, U32 msgId, U8 *json, U16 length) {
 	buf[NTY_PROTO_MSGTYPE_IDX] = NTY_PROTO_VOICE_REQ;
 
 	memcpy(&buf[NTY_PROTO_VOICE_REQ_DEVID_IDX], &proto->selfId, sizeof(C_DEVID));
-	memcpy(&buf[NTY_PROTO_VOICE_REQ_MSGID_IDX], &msgId, sizeof(U32));
 	if (length != 0) {
 		memcpy(&buf[NTY_PROTO_VOICE_REQ_JSON_LENGTH_IDX], &length, sizeof(U16));
 	}
@@ -887,6 +886,7 @@ int ntyCheckProtoClientStatus(void) {
 
 void* ntyStartupClient(int *status) {
 	NattyProto* proto = ntyProtoInstance();
+	//proto->
 	if (proto) {
 		ntySendLogin(proto);
 		ntySetupRecvProcThread(proto); //setup recv proc
@@ -1088,11 +1088,11 @@ int ntySendVoicePacket(void *self, U8 *buffer, int length, C_DEVID toId) {
 	U32 pktLength = NTY_VOICEREQ_DATA_LENGTH, i;
 	U8 *pkt = buffer;
 	void *pNetwork = ntyNetworkInstance();
-	NattyProto *proto = self;
+	NattyProto* proto = self;
 	int ret = -1;
 
-	LOG(" destId:%d, pktIndex:%d, pktTotal:%d, selfId:%lld", NTY_PROTO_VOICE_DATA_REQ_GROUP_IDX,
-			NTY_PROTO_VOICE_DATA_REQ_PKTINDEX_IDX, NTY_PROTO_VOICE_DATA_REQ_PKTTOTLE_IDX, proto->selfId);
+	LOG(" destId:%d, pktIndex:%d, pktTotal:%d", NTY_PROTO_VOICEREQ_DESTID_IDX,
+		NTY_PROTO_VOICEREQ_PKTINDEX_IDX, NTY_PROTO_VOICEREQ_PKTTOTLE_IDX);
 	
 	for (i = 0;i < Count;i ++) {
 		pkt = buffer+(i*NTY_VOICEREQ_PACKET_LENGTH);
@@ -1100,19 +1100,19 @@ int ntySendVoicePacket(void *self, U8 *buffer, int length, C_DEVID toId) {
 		pkt[NTY_PROTO_VERSION_IDX] = NTY_PROTO_VERSION;
 		pkt[NTY_PROTO_DEVTYPE_IDX] = NTY_PROTO_CLIENT_ANDROID;
 		pkt[NTY_PROTO_PROTOTYPE_IDX] = (U8) MSG_REQ;	
-		pkt[NTY_PROTO_VOICEREQ_TYPE_IDX] = NTY_PROTO_VOICE_DATA_REQ;
+		pkt[NTY_PROTO_VOICEREQ_TYPE_IDX] = NTY_PROTO_VOICE_REQ;
 
-		memcpy(pkt+NTY_PROTO_VOICE_DATA_REQ_DEVID_IDX, &proto->selfId, sizeof(C_DEVID));
-		memcpy(pkt+NTY_PROTO_VOICE_DATA_REQ_GROUP_IDX, &toId, sizeof(C_DEVID));
+		memcpy(pkt+NTY_PROTO_VOICEREQ_SELFID_IDX, &proto->selfId, sizeof(C_DEVID));
+		memcpy(pkt+NTY_PROTO_VOICEREQ_DESTID_IDX, &toId, sizeof(C_DEVID));
 
-		memcpy(pkt+NTY_PROTO_VOICE_DATA_REQ_PKTINDEX_IDX, &i, sizeof(U16));
-		memcpy(pkt+NTY_PROTO_VOICE_DATA_REQ_PKTTOTLE_IDX, &Count , sizeof(U16));
+		memcpy(pkt+NTY_PROTO_VOICEREQ_PKTINDEX_IDX, &i, sizeof(U16));
+		memcpy(pkt+NTY_PROTO_VOICEREQ_PKTTOTLE_IDX, &Count , sizeof(U16));
 
 		if (i == Count-1) { //last packet
 			pktLength = (length % NTY_VOICEREQ_PACKET_LENGTH) - NTY_VOICEREQ_EXTEND_LENGTH;
 		}
 
-		memcpy(pkt+NTY_PROTO_VOICE_DATA_REQ_PKTLENGTH_IDX, &pktLength, sizeof(U32));
+		memcpy(pkt+NTY_PROTO_VOICEREQ_PKTLENGTH_IDX, &pktLength, sizeof(U32));
 		
 		ret = ntySendFrame(pNetwork, pkt, pktLength+NTY_VOICEREQ_EXTEND_LENGTH);
 
@@ -1193,7 +1193,6 @@ static int ntySendBigBufferCb(NITIMER_ID id, void *user_data, int len) {
 
 static int ntySendBigBuffer(void *self, U8 *u8Buffer, int length, C_DEVID gId) {
 	int i = 0;
-	NattyProto *proto = self;
 #if 0
 	tBigTimer = add_timer(10, ntySendBigBufferCb, NULL, 0);
 #else
@@ -1201,9 +1200,9 @@ static int ntySendBigBuffer(void *self, U8 *u8Buffer, int length, C_DEVID gId) {
 	nBigBufferSendTimer = ntyTimerAdd(nTimerList, PACKET_SEND_TIME_TICK, ntySendBigBufferCb, NULL, 0);
 #endif
 	int ret = ntyAudioPacketEncode(u8Buffer, length);
-	LOG(" ntySendBigBuffer --> Ret %d, %x, %lld, self:%lld", ret, u8Buffer[0], gId, proto->selfId);
+	LOG(" ntySendBigBuffer --> Ret %d, %x", ret, u8Buffer[0]);
 
-	ntySendVoicePacket(proto, u8Buffer, length, gId);
+	ntySendVoicePacket(self, u8Buffer, length, gId);
 #if 0
 	C_DEVID tToId = 0;
 	memcpy(&tToId, u8Buffer+NTY_PROTO_VOICEREQ_DESTID_IDX, sizeof(C_DEVID));
@@ -1236,6 +1235,7 @@ int ntyAudioRecodeDepacket(U8 *buffer, int length) {
 
 	return 0;
 }
+
 
 
 void ntyPacketClassifier(void *arg, U8 *buf, int length) {
@@ -1330,8 +1330,10 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 			if (ret == 1) {
 				U32 u32MsgId = 0;
 				C_DEVID fromId = 0;
+				C_DEVID gId = 0;
 				
 				ntyU8ArrayToU64(buf+NTY_PROTO_VOICE_DATA_REQ_DEVID_IDX, &fromId);
+				ntyU8ArrayToU64(buf+NTY_PROTO_VOICE_DATA_REQ_DEVID_IDX, &gId);
 				memcpy(&u32MsgId, buf+NTY_PROTO_VOICE_DATA_REQ_OFFLINEMSGID_IDX, sizeof(U32));
 
 				if (NTY_RESULT_FAILED == ntyVoiceAckClient(u32MsgId, NULL, 0)) {
@@ -1340,7 +1342,7 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 				}
 
 				if (proto->onPacketRecv) {
-					proto->onPacketRecv(fromId, u32DataLength);
+					proto->onPacketRecv(fromId, gId, u32DataLength);
 				}
 			}
 			break;
@@ -1418,6 +1420,7 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 			}
 
 			// voice data notify
+			//notify 
 			if (proto->onVoiceBroadCastResult) {
 				proto->onVoiceBroadCastResult(fromId, json, length);
 			}
