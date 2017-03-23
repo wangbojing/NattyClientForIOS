@@ -1200,8 +1200,8 @@ static int ntySendBigBuffer(void *self, U8 *u8Buffer, int length, C_DEVID gId) {
 	void *nTimerList = ntyTimerInstance();
 	nBigBufferSendTimer = ntyTimerAdd(nTimerList, PACKET_SEND_TIME_TICK, ntySendBigBufferCb, NULL, 0);
 #endif
-	int ret = ntyAudioPacketEncode(u8Buffer, length);
-	LOG(" ntySendBigBuffer --> Ret %d, %x, %lld, self:%lld", ret, u8Buffer[0], gId, proto->selfId);
+	length = ntyAudioPacketEncode(u8Buffer, length);
+	LOG(" ntySendBigBuffer --> Ret %d, %x, %lld, self:%lld", length, u8Buffer[0], gId, proto->selfId);
 
 	ntySendVoicePacket(proto, u8Buffer, length, gId);
 #if 0
