@@ -130,6 +130,11 @@ NTY_RETURN_CALLBACK onLocationBroadCastResult = NULL; //RECV LOCATION_BROADCAST
 NTY_RETURN_CALLBACK onCommonBroadCastResult = NULL; //RECV COMMON_BROADCAST
 NTY_RETURN_CALLBACK onBindConfirmResult = NULL;
 
+#if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
+U8 tokens[NORMAL_BUFFER_SIZE];
+U8 tokenLen;
+#endif
+
 
 U8 u8ConnectFlag = 0;;
 
@@ -258,7 +263,12 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 	proto->onLocationBroadCastResult = onLocationBroadCastResult; //RECV LOCATION_BROADCAST
 	proto->onCommonBroadCastResult = onCommonBroadCastResult; //RECV COMMON_BROADCAST
 	proto->onBindConfirmResult = onBindConfirmResult;
-	
+
+#if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
+	memcpy(proto->tokens, tokens, tokenLen);
+	proto->tokenLen = (U16)tokenLen;
+#endif	
+
 	ntyGenCrcTable();
 	//Setup Socket Connection
 	Network *network = ntyNetworkInstance();
@@ -893,6 +903,15 @@ int ntyCheckProtoClientStatus(void) {
 	if (onPacketSuccess == NULL) return -11;
 	
 }
+
+#if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
+void ntySetIosTokenClient(U8 *iosTokens, int length) {
+	memcpy(tokens, iosTokens, length);
+	tokenLen = (U16)length;
+}
+#endif
+
+
 
 void* ntyStartupClient(int *status) {
 	NattyProto* proto = ntyProtoInstance();

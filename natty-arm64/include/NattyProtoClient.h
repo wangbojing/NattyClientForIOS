@@ -116,7 +116,9 @@ void ntySetTimeAckResult(NTY_PARAM_CALLBACK cb);
 
 void ntySetLogoutAckResult(NTY_STATUS_CALLBACK cb);
 void ntySetHeartBeatAckResult(NTY_STATUS_CALLBACK cb);
+
 void ntySetLoginAckResult(NTY_PARAM_CALLBACK cb);
+void ntySetBindComfirmResult(NTY_RETURN_CALLBACK cb);
 
 
 int ntyBindClient(DEVID did, U8 *json, U16 length);
@@ -130,7 +132,8 @@ int ntyCommonReqClient(DEVID gId, U8 *json, U16 length);
 int ntyCommonAckClient(U32 msgId, U8 *json, U16 length);
 int ntyDataRouteClient(DEVID toId, U8 *json, U16 length);
 
-void ntyProtoClientSetToken(void *_self, U8 *tokens, int length);
+void ntySetIosTokenClient(U8 *iosTokens, int length);
+int ntyBindConfirmReqClient(DEVID proposerId, DEVID devId, U32 msgId, U8 *json, U16 length);
 
 U8 *ntyGetRecvBigBuffer(void);
 U8 *ntyGetSendBigBuffer(void);
