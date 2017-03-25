@@ -883,7 +883,7 @@ void ntySetCommonBroadCastResult(NTY_RETURN_CALLBACK cb) {
 	onCommonBroadCastResult = cb;
 }
 
-void ntySetBindComfirmResult(NTY_RETURN_CALLBACK cb) {
+void ntySetBindConfirmResult(NTY_RETURN_CALLBACK cb) {
 	onBindConfirmResult = cb;
 }
 

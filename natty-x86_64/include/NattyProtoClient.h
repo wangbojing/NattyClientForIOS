@@ -118,7 +118,7 @@ void ntySetLogoutAckResult(NTY_STATUS_CALLBACK cb);
 void ntySetHeartBeatAckResult(NTY_STATUS_CALLBACK cb);
 
 void ntySetLoginAckResult(NTY_PARAM_CALLBACK cb);
-void ntySetBindComfirmResult(NTY_RETURN_CALLBACK cb);
+void ntySetBindConfirmResult(NTY_RETURN_CALLBACK cb);
 
 
 int ntyBindClient(DEVID did, U8 *json, U16 length);
