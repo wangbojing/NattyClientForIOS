@@ -914,6 +914,15 @@ void ntySetIosTokenClient(U8 *iosTokens, int length) {
 #endif
 
 
+static int ntyRuntimerCb(NITIMER_ID id, void *user_data, int len) {
+	//int status = 0;
+	
+	LOG(" ntyRuntimerCb ...\n");
+	
+
+	return NTY_RESULT_SUCCESS;
+}
+
 
 void* ntyStartupClient(int *status) {
 	NattyProto* proto = ntyProtoInstance();
@@ -1093,14 +1102,6 @@ static int ntyReconnectCb(NITIMER_ID id, void *user_data, int len) {
 	return NTY_RESULT_SUCCESS;
 }
 
-static int ntyRuntimerCb(NITIMER_ID id, void *user_data, int len) {
-	//int status = 0;
-	
-	LOG(" ntyRuntimerCb ...\n");
-	
-
-	return NTY_RESULT_SUCCESS;
-}
 
 
 
