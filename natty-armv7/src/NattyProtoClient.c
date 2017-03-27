@@ -66,6 +66,8 @@ static NWTimer *nHeartBeatTimer = NULL;
 static NWTimer *nReconnectTimer = NULL;
 static NWTimer *nBigBufferSendTimer = NULL;
 static NWTimer *nBigBufferRecvTimer = NULL;
+static NWTimer *nRunTimer = NULL;
+
 
 
 static int ntyHeartBeatCb (NITIMER_ID id, void *user_data, int len);
@@ -405,7 +407,7 @@ int ntyProtoClientBind(void *_self, C_DEVID did, U8 *json, U16 length) {
 	NattyProto *proto = _self;
 	int len;	
 
-	U8 buf[NORMAL_BUFFER_SIZE] = {0};	
+	U8 buf[RECV_BUFFER_SIZE] = {0};	
 
 	buf[NTY_PROTO_VERSION_IDX] = NTY_PROTO_VERSION;	
 	buf[NTY_PROTO_PROTOTYPE_IDX] = (U8) PROTO_REQ;	
@@ -929,6 +931,12 @@ void* ntyStartupClient(int *status) {
 		*status = -1;
 	}
 
+	if (nRunTimer == NULL) {
+		void *nTimerList = ntyTimerInstance();
+		nRunTimer = ntyTimerAdd(nTimerList, 15, ntyRuntimerCb, NULL, 0);
+		
+	}
+
 	
 	return proto;
 }
@@ -1084,6 +1092,16 @@ static int ntyReconnectCb(NITIMER_ID id, void *user_data, int len) {
 
 	return NTY_RESULT_SUCCESS;
 }
+
+static int ntyRuntimerCb(NITIMER_ID id, void *user_data, int len) {
+	//int status = 0;
+	
+	LOG(" ntyRuntimerCb ...\n");
+	
+
+	return NTY_RESULT_SUCCESS;
+}
+
 
 
 void ntyStartReconnectTimer(void) {
