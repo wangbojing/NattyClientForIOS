@@ -914,11 +914,32 @@ void ntySetIosTokenClient(U8 *iosTokens, int length) {
 #endif
 
 
-static int ntyRuntimerCb(NITIMER_ID id, void *user_data, int len) {
-	//int status = 0;
+static int ntyReconnectCb(NITIMER_ID id, void *user_data, int len) {
+	int status = 0;
 	
-	LOG(" ntyRuntimerCb ...\n");
+	trace(" ntyReconnectCb ...\n");
+	NattyProto *proto = ntyProtoGetInstance();
+	if (proto != NULL) {
+		if (proto->u8ConnectFlag) {
+			return ;
+		}
+	}
 	
+	proto = ntyStartupClient(&status);
+	if (status != -1 && (proto != NULL)) {
+		trace(" ntyReconnectCb  Success... status:%d, flag:%d\n", status, proto->u8ConnectFlag);
+		if (proto->u8ConnectFlag) { //Reconnect Success
+			if (proto->onProxyReconnect)
+				proto->onProxyReconnect(0);
+			//Stop Timer
+#if 1
+			trace(" Stop Timer\n");
+			void *nTimerList = ntyTimerInstance();
+			ntyTimerDel(nTimerList, nReconnectTimer);
+			nReconnectTimer = NULL;
+#endif
+		}
+	}
 
 	return NTY_RESULT_SUCCESS;
 }
@@ -932,21 +953,15 @@ void* ntyStartupClient(int *status) {
 		
 		*status = proto->u8ConnectFlag;
 	} else {
-		if (nReconnectTimer == NULL) {
-			// startup failed
-			void *nTimerList = ntyTimerInstance();
-			nReconnectTimer = ntyTimerAdd(nTimerList, 15, ntyReconnectCb, NULL, 0);
-		}
 		*status = -1;
 	}
 
-	if (nRunTimer == NULL) {
+	if (nReconnectTimer == NULL) {
+		// startup failed
 		void *nTimerList = ntyTimerInstance();
-		nRunTimer = ntyTimerAdd(nTimerList, 15, ntyRuntimerCb, NULL, 0);
-		
+		nReconnectTimer = ntyTimerAdd(nTimerList, 15, ntyReconnectCb, NULL, 0);
 	}
 
-	
 	return proto;
 }
 
@@ -1077,29 +1092,6 @@ int ntyGetRecvBufferSize(void) {
 		return proto->recvLen;
 	}
 	return -1;
-}
-
-static int ntyReconnectCb(NITIMER_ID id, void *user_data, int len) {
-	int status = 0;
-	
-	trace(" ntyReconnectCb ...\n");
-	NattyProto *proto = ntyStartupClient(&status);
-	if (status != -1 && (proto != NULL)) {
-		trace(" ntyReconnectCb  Success... status:%d, flag:%d\n", status, proto->u8ConnectFlag);
-		if (proto->u8ConnectFlag) { //Reconnect Success
-			if (proto->onProxyReconnect)
-				proto->onProxyReconnect(0);
-			//Stop Timer
-#if 1
-			trace(" Stop Timer\n");
-			void *nTimerList = ntyTimerInstance();
-			ntyTimerDel(nTimerList, nReconnectTimer);
-			nReconnectTimer = NULL;
-#endif
-		}
-	}
-
-	return NTY_RESULT_SUCCESS;
 }
 
 
