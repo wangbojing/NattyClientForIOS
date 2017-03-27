@@ -1657,6 +1657,9 @@ static void* ntyRecvProc(void *arg) {
 				}
 
 				continue;
+			} else if (proto->recvLen > RECV_BUFFER_SIZE) {
+				proto->u8RecvExitFlag = 1;
+				continue;
 			}
 
 			int nServFd = ntyGetSocket(pNetwork);
