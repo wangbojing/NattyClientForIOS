@@ -921,7 +921,7 @@ static int ntyReconnectCb(NITIMER_ID id, void *user_data, int len) {
 	NattyProto *proto = ntyProtoGetInstance();
 	if (proto != NULL) {
 		if (proto->u8ConnectFlag) {
-			return ;
+			return 0;
 		}
 	}
 	
