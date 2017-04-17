@@ -543,7 +543,7 @@ int ntyProtoClientVoiceAck(void *_self, U32 msgId, U8 *json, U16 length) {
 int ntyProtoClientVoiceDataReq(void *_self, C_DEVID gId, U8 *data, int length) {
 	NattyProto *proto = _self;
 
-	ntySendBigBuffer(proto, data, length, gId);
+	return ntySendBigBuffer(proto, data, length, gId);
 }
 
 int ntyProtoClientCommonReq(void *_self, C_DEVID gId, U8 *json, U16 length) {
@@ -1260,7 +1260,7 @@ static int ntySendBigBuffer(void *self, U8 *u8Buffer, int length, C_DEVID gId) {
 	memcpy(&tToId, u8Buffer+NTY_PROTO_VOICEREQ_DESTID_IDX, sizeof(C_DEVID));
 	LOG(" ntySendBigBuffer --> toId : %lld, %d", tToId, NTY_PROTO_VOICEREQ_DESTID_IDX);
 #endif
-	return 0;
+	return length;
 }
 
 int ntyAudioRecodeDepacket(U8 *buffer, int length) {
