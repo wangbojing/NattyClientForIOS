@@ -1221,6 +1221,7 @@ static int ntySendBigBufferCb(NITIMER_ID id, void *user_data, int len) {
 	NattyProto* proto = ntyProtoGetInstance();
 	if (proto && proto->onPacketSuccess) {
 		proto->onPacketSuccess(1); //Failed
+		LOG("ntySendBigBufferCb --> onPacketSuccess\n");
 #if 0
 		if (tBigTimer != -1) {
 			del_timer(tBigTimer);
