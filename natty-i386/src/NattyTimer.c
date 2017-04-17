@@ -158,6 +158,12 @@ static NSTimer* ntyWheelTimerAdd(NSTimerList *nTimerList, int interval, NFTIMER_
 	if(user_data != NULL) {
 #if 1
 		node->user_data = malloc(len);
+		if (node->user_data == NULL) {
+			free(node);
+			return NULL;
+		}
+
+		memset(node->user_data, 0, len);
 		memcpy(node->user_data, user_data, len);
 		node->len = len;
 #else
@@ -195,7 +201,9 @@ static int ntyWheelTimerDel(NSTimerList *nTimerList, NSTimer *node) {
 static void* ntyTimerCtor(void *self, va_list *params) {
 	NWTimer* nTimer = self;
 	nTimer->nContainer = (NSTimerList*)malloc(sizeof(NSTimerList));
+	if (nTimer->nContainer == NULL) return nTimer;
 	
+	memset(nTimer->nContainer, 0, sizeof(NSTimerList));
 	ntyWheelTimerInitialize(nTimer->nContainer, NTY_MAX_TIMER_NUM);
 
 	nGlobalTimer = nTimer->nContainer;

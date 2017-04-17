@@ -917,7 +917,7 @@ void ntySetIosTokenClient(U8 *iosTokens, int length) {
 static int ntyReconnectCb(NITIMER_ID id, void *user_data, int len) {
 	int status = 0;
 	
-	trace(" ntyReconnectCb ...\n");
+	//trace(" ntyReconnectCb ...\n");
 	NattyProto *proto = ntyProtoGetInstance();
 	if (proto != NULL) {
 		if (proto->u8ConnectFlag) {
@@ -1149,6 +1149,15 @@ int ntySendVoicePacket(void *self, U8 *buffer, int length, C_DEVID toId) {
 
 		if (i == Count-1) { //last packet
 			pktLength = (length % NTY_VOICEREQ_PACKET_LENGTH) - NTY_VOICEREQ_EXTEND_LENGTH;
+
+#if 1 //Cancel Timer
+			void *nTimerList = ntyTimerInstance();
+
+			if (nBigBufferSendTimer != NULL) {
+				ntyTimerDel(nTimerList, nBigBufferSendTimer);
+				nBigBufferSendTimer = NULL;
+			}
+#endif
 		}
 
 		memcpy(pkt+NTY_PROTO_VOICE_DATA_REQ_PKTLENGTH_IDX, &pktLength, sizeof(U32));
@@ -1237,7 +1246,9 @@ static int ntySendBigBuffer(void *self, U8 *u8Buffer, int length, C_DEVID gId) {
 	tBigTimer = add_timer(10, ntySendBigBufferCb, NULL, 0);
 #else
 	void *nTimerList = ntyTimerInstance();
-	nBigBufferSendTimer = ntyTimerAdd(nTimerList, PACKET_SEND_TIME_TICK, ntySendBigBufferCb, NULL, 0);
+	if (nBigBufferSendTimer == NULL) {
+		nBigBufferSendTimer = ntyTimerAdd(nTimerList, PACKET_SEND_TIME_TICK, ntySendBigBufferCb, NULL, 0);
+	}
 #endif
 	length = ntyAudioPacketEncode(u8Buffer, length);
 	LOG(" ntySendBigBuffer --> Ret %d, %x, %lld, self:%lld", length, u8Buffer[0], gId, proto->selfId);
