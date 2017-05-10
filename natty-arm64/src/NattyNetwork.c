@@ -266,9 +266,17 @@ static void* ntyClientSocketDtor(void *self) {
 	return self;
 }
 
+#if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
+extern U8 publishStatus;
+#endif
+
+
 static int ntyClientSocketSendFrame(void *self, U8 *buffer, int len) {
 	ClientSocket *nSocket = self;
 	buffer[NTY_PROTO_DEVTYPE_IDX] = NTY_PROTO_SELFTYPE;
+#if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
+	buffer[NTY_PROTO_DEVTYPE_IDX] = publishStatus;
+#endif
 	*(U32*)(&buffer[len-sizeof(U32)]) = ntyGenCrcValue(buffer, len-sizeof(U32));
 	
 	return send(nSocket->sockfd, buffer, len, 0);

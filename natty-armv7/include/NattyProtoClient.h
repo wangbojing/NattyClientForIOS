@@ -133,6 +133,9 @@ int ntyCommonAckClient(U32 msgId, U8 *json, U16 length);
 int ntyDataRouteClient(DEVID toId, U8 *json, U16 length);
 
 void ntySetIosTokenClient(U8 *iosTokens, int length);
+void ntySetIosAppPublishStatus(U8 status);
+
+
 int ntyBindConfirmReqClient(DEVID proposerId, DEVID devId, U32 msgId, U8 *json, U16 length);
 
 U8 *ntyGetRecvBigBuffer(void);

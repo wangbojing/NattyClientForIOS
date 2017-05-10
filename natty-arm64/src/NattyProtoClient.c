@@ -100,7 +100,7 @@ typedef enum {
 
 #if 1 //local
 
-static char *sdk_version = "NattyIOS V5.0";
+static char *sdk_version = "NattyIOS V5.1";
 
 static C_DEVID gSelfId = 0;
 RECV_CALLBACK onRecvCallback = NULL;
@@ -135,10 +135,11 @@ NTY_RETURN_CALLBACK onBindConfirmResult = NULL;
 #if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
 U8 tokens[NORMAL_BUFFER_SIZE];
 U8 tokenLen;
+U8 publishStatus = 0;
 #endif
 
 
-U8 u8ConnectFlag = 0;;
+U8 u8ConnectFlag = 0;
 
 
 #endif
@@ -151,6 +152,7 @@ typedef struct _NATTYPROTOCOL {
 #if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
 	U8 tokens[NORMAL_BUFFER_SIZE];
 	U8 tokenLen;
+	U8 publishStatus;
 #endif
 	void *friends;
 	U8 recvBuffer[RECV_BUFFER_SIZE];
@@ -269,6 +271,7 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 #if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
 	memcpy(proto->tokens, tokens, tokenLen);
 	proto->tokenLen = (U16)tokenLen;
+	proto->publishStatus = publishStatus;
 #endif	
 
 	ntyGenCrcTable();
@@ -362,6 +365,14 @@ void ntyProtoClientSetToken(void *_self, U8 *tokens, int length) {
 	memcpy(proto->tokens, tokens, length);
 	proto->tokenLen = (U16)length;
 }
+
+void ntyProtoClientSetPublishStatus(void *_self, U8 status) {
+	NattyProto *proto = _self;
+
+	proto->publishStatus = status;
+}
+
+
 #endif
 
 /*
@@ -911,6 +922,15 @@ void ntySetIosTokenClient(U8 *iosTokens, int length) {
 	memcpy(tokens, iosTokens, length);
 	tokenLen = (U16)length;
 }
+
+void ntySetIosAppPublishStatus(U8 status) { //status: 0 -> development, 1 -> product
+	if (status) {
+		publishStatus = NTY_PROTO_CLIENT_IOS_PUBLISH;
+	} else {
+		publishStatus = NTY_PROTO_CLIENT_IOS;
+	}
+}
+
 #endif
 
 
@@ -969,6 +989,12 @@ void ntyShutdownClient(void) {
 	NattyProto* proto = ntyProtoGetInstance();
 	if (proto) {
 		ntySendLogout(proto);
+	}
+	
+	if (nReconnectTimer != NULL) {
+		// shutdown failed
+		void *nTimerList = ntyTimerInstance();
+		ntyTimerDel(nTimerList, nReconnectTimer);
 	}
 }
 

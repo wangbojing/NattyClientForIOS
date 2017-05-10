@@ -46,6 +46,7 @@
 #ifndef __NATTY_TIMER_H__
 #define __NATTY_TIMER_H__
 
+
 #include <signal.h>
 #include <sys/time.h>
 #include <string.h>
@@ -140,11 +141,5 @@ int ntyTimerDel(void *self, void *timer);
 
 
 #endif
-
-
-
-
-
-
 
 
