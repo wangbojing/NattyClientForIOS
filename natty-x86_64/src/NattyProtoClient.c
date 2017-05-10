@@ -989,12 +989,14 @@ void ntyShutdownClient(void) {
 	NattyProto* proto = ntyProtoGetInstance();
 	if (proto) {
 		ntySendLogout(proto);
+		proto->u8RecvExitFlag = 2;
 	}
 	
 	if (nReconnectTimer != NULL) {
 		// shutdown failed
 		void *nTimerList = ntyTimerInstance();
 		ntyTimerDel(nTimerList, nReconnectTimer);
+		nReconnectTimer = NULL;
 	}
 }
 
@@ -1664,14 +1666,18 @@ static void* ntyRecvProc(void *arg) {
 
 	ntydbg(" ntyRecvProc %d\n", fds.fd);
 	while (1) {
-		if (proto->u8RecvExitFlag){ 
-			ntydbg(" ntyRecvProc Exist\n");
+		if (proto->u8RecvExitFlag == 1){ //reconnect
+			ntydbg(" ntyRecvProc Reconnect Exist\n");
 			ntyProtoRelease();
 
-			//reconnect
 			ntyStartReconnectTimer();
 			break;
+		} else if (proto->u8RecvExitFlag == 2) {  //shutdown
+			ntydbg(" ntyRecvProc Shutdown Exist\n");
+			ntyProtoRelease();
+			break;
 		}
+		
 		ret = poll(&fds, 1, 5);
 		if (ret) {
 			bzero(buf, RECV_BUFFER_SIZE);
