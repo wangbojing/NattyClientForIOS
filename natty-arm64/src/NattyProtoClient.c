@@ -134,7 +134,7 @@ NTY_RETURN_CALLBACK onBindConfirmResult = NULL;
 
 #if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
 U8 tokens[NORMAL_BUFFER_SIZE];
-U8 tokenLen;
+U16 tokenLen;
 U8 publishStatus = 0;
 #endif
 
@@ -151,7 +151,7 @@ typedef struct _NATTYPROTOCOL {
 	C_DEVID fromId; //store ack devid
 #if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
 	U8 tokens[NORMAL_BUFFER_SIZE];
-	U8 tokenLen;
+	U16 tokenLen;
 	U8 publishStatus;
 #endif
 	void *friends;
@@ -270,7 +270,7 @@ void* ntyProtoClientCtor(void *_self, va_list *params) {
 
 #if (NTY_PROTO_SELFTYPE==NTY_PROTO_CLIENT_IOS)
 	memcpy(proto->tokens, tokens, tokenLen);
-	proto->tokenLen = (U16)tokenLen;
+	proto->tokenLen = tokenLen;
 	proto->publishStatus = publishStatus;
 #endif	
 
