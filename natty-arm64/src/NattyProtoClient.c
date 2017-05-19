@@ -61,6 +61,8 @@
 #include "NattyVector.h"
 
 
+#define NTY_RECONNECTION_TIMER_TICK		3
+
 /* ** **** ******** **************** Global Variable **************** ******** **** ** */
 static NWTimer *nHeartBeatTimer = NULL;
 static NWTimer *nReconnectTimer = NULL;
@@ -100,7 +102,7 @@ typedef enum {
 
 #if 1 //local
 
-static char *sdk_version = "NattyIOS V5.1";
+static char *sdk_version = "NattyIOS V5.3";
 
 static C_DEVID gSelfId = 0;
 RECV_CALLBACK onRecvCallback = NULL;
@@ -979,7 +981,7 @@ void* ntyStartupClient(int *status) {
 	if (nReconnectTimer == NULL) {
 		// startup failed
 		void *nTimerList = ntyTimerInstance();
-		nReconnectTimer = ntyTimerAdd(nTimerList, 15, ntyReconnectCb, NULL, 0);
+		nReconnectTimer = ntyTimerAdd(nTimerList, NTY_RECONNECTION_TIMER_TICK, ntyReconnectCb, NULL, 0);
 	}
 
 	return proto;
@@ -1102,6 +1104,14 @@ int ntyBindConfirmReqClient(C_DEVID proposerId, C_DEVID devId, U32 msgId, U8 *js
 	return -1;
 }
 
+int ntyOfflineMsgReqClient(void) {
+	NattyProto* proto = ntyProtoGetInstance();
+
+	if (proto) {
+		return ntyProtoClientOfflineMsgReq(proto);
+	}
+	return -1;
+}
 
 #endif
 
@@ -1130,7 +1140,7 @@ void ntyStartReconnectTimer(void) {
 	ntylog(" setup ntyStartReconnectTimer \n");
 	if (nReconnectTimer == NULL) {
 		void *nTimerList = ntyTimerInstance();
-		nReconnectTimer = ntyTimerAdd(nTimerList, 15, ntyReconnectCb, NULL, 0);
+		nReconnectTimer = ntyTimerAdd(nTimerList, NTY_RECONNECTION_TIMER_TICK, ntyReconnectCb, NULL, 0);
 	}
 }
 
@@ -1330,6 +1340,8 @@ void ntyPacketClassifier(void *arg, U8 *buf, int length) {
 			U16 status = *(U16*)(buf+NTY_PROTO_LOGIN_ACK_STATUS_IDX);
 			U16 jsonLen = *(U16*)(buf+NTY_PROTO_LOGIN_ACK_JSON_LENGTH_IDX);
 			U8 *json = buf+NTY_PROTO_LOGIN_ACK_JSON_CONTENT_IDX;
+
+			if (NTY_RESULT_FAILED == ntyOfflineMsgReqClient()) break;
 
 			LOG(" LoginAckResult status:%d\n", status);
 			if (proto->onLoginAckResult) {
