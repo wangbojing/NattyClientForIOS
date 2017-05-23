@@ -48,7 +48,7 @@
 #ifndef __NATTY_PROTOCOL_H__
 #define __NATTY_PROTOCOL_H__
 
-#define NTY_PROTO_VERSION				'A'
+#define NTY_PROTO_VERSION				'B'
 
 #define NTY_PROTO_CLIENT_WATCH			'D'
 #define NTY_PROTO_CLIENT_ANDROID		'A'
