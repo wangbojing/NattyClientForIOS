@@ -102,7 +102,7 @@ typedef enum {
 
 #if 1 //local
 
-static char *sdk_version = "NattyIOS V5.3";
+static char *sdk_version = "NattyIOS V5.3 betaB";
 
 static C_DEVID gSelfId = 0;
 RECV_CALLBACK onRecvCallback = NULL;
