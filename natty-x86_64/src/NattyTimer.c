@@ -188,7 +188,7 @@ static NSTimer* ntyWheelTimerAdd(NSTimerList *nTimerList, int interval, NFTIMER_
 }
 
 static int ntyWheelTimerDel(NSTimerList *nTimerList, NSTimer *node) {
-	ASSERT(node != NULL);
+	if(node == NULL) return NTY_RESULT_ERROR;
 	if (node->id <0 || node->id > nTimerList->max_num) {
 		return NTY_RESULT_FAILED;
 	}
